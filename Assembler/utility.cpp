@@ -1,0 +1,68 @@
+
+
+#include <string>
+
+using namespace std;
+
+string toupper(string&);
+bool is_hex(string);
+string to_hex(string);
+
+string toupper(string& s)
+{
+    for(auto& c : s)
+    {
+        c = toupper(c);
+    }
+    return s;
+}
+
+bool is_hex(string s)
+{
+    toupper(s);
+    for(auto& c : s)
+    {
+        if (!(c >= '0' && c <= '9' || c >= 'A' && c <= 'F'))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+string to_hex(string num)
+{
+    string bin;
+    toupper(num);
+    if (!is_hex(num))
+    {
+        throw "Not a hex number";
+    }
+    for(auto& c : num)
+    {
+        string v;
+        if (c == '0') v = "0000";
+        if (c == '1') v = "0001";
+        if (c == '2') v = "0010";
+        if (c == '3') v = "0011";
+        if (c == '4') v = "0100";
+        if (c == '5') v = "0101";
+        if (c == '6') v = "0110";
+        if (c == '7') v = "0111";
+        if (c == '8') v = "1000";
+        if (c == '9') v = "1001";
+        if (c == 'A') v = "1010";
+        if (c == 'B') v = "1011";
+        if (c == 'C') v = "1100";
+        if (c == 'D') v = "1101";
+        if (c == 'E') v = "1110";
+        if (c == 'F') v = "1111";
+        bin.append(v);
+    }
+    while (bin.size() < 16)
+    {
+        bin.insert(0, "0000");
+    }
+
+    return bin;
+}
