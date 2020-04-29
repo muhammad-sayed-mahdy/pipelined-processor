@@ -11,7 +11,7 @@ string parse(string&);
 string toupper(string&);
 vector<string> split(string, int, bool);
 bool is_hex(string);
-string to_hex(string);
+string to_bin(string);
 
 string parse(string& s)
 {
@@ -81,7 +81,7 @@ bool is_hex(string s)
     return true;
 }
 
-string to_hex(string num)
+string to_bin(string num)
 {
     string bin;
     toupper(num);

@@ -14,8 +14,14 @@ unsigned int crnt_line = 0;
 
 void init(map<string, operation>& o, map<string, string>& r);
 
-int main(int argc, char* argv[])
+int main(int argc, char const * argv[])
 {
+    if (argc < 2)
+    {
+        printf("Missing argument: input file\n");
+        exit(-1);
+    }
+
     map<string, operation> ops;
     map<string, string> reg;
     map<unsigned int, string> output;
@@ -131,7 +137,7 @@ int main(int argc, char* argv[])
 
                 output[crnt_line] = instruction;
                 ++crnt_line;
-                output[crnt_line] = to_hex(instruction2);
+                output[crnt_line] = to_bin(instruction2);
             }
             else if (o.two_words == 2)
             {
@@ -139,7 +145,7 @@ int main(int argc, char* argv[])
                 // in >> instruction2;
                 instruction2 = operands[operands.size() - 1];
 
-                instruction2 = to_hex(instruction2);
+                instruction2 = to_bin(instruction2);
                 unsigned int s2 = instruction2.size() - 1;
                 if (s2 > 16)
                 {
@@ -172,7 +178,7 @@ int main(int argc, char* argv[])
         }
         else if (is_hex(s)) // could just add 16'h before ?
         {
-            output[crnt_line] = to_hex(s);
+            output[crnt_line] = to_bin(s);
 
             ++crnt_line;
         }
@@ -184,8 +190,9 @@ int main(int argc, char* argv[])
         
     }
     in.close();
-
-    ofstream out("output.bin");
+    
+    string output_file = input_file.substr(0, input_file.find('.'))+".bin";
+    ofstream out(output_file);
     for (auto instrucitons : output)
     {
         out << instrucitons.first << ": " << instrucitons.second << endl;
