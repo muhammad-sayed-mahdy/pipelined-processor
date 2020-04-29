@@ -1,12 +1,29 @@
 
-
+#include <iostream>
 #include <string>
+#include <algorithm>
 
 using namespace std;
 
+string parse(string&);
 string toupper(string&);
 bool is_hex(string);
-string to_hex(string);
+string to_bin(string);
+
+string parse(string& s)
+{
+    for (auto& c : s)
+    {
+        if (c == ',')
+        {
+            c = ' ';
+        }
+    }
+
+    s.erase(std::remove_if(s.begin(), s.end(), ::isspace), s.end());
+
+    return toupper(s);;
+}
 
 string toupper(string& s)
 {
@@ -30,13 +47,14 @@ bool is_hex(string s)
     return true;
 }
 
-string to_hex(string num)
+string to_bin(string num)
 {
     string bin;
     toupper(num);
     if (!is_hex(num))
     {
-        throw "Not a hex number";
+        cout << "Not a hex number\n";
+        return "";
     }
     for(auto& c : num)
     {

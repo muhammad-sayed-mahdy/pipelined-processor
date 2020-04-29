@@ -14,7 +14,7 @@ unsigned int crnt_line = 0;
 
 void init(map<string, operation>& o, map<string, string>& r);
 
-int main()
+int main(int argc, char* argv[])
 {
     map<string, operation> ops;
     map<string, string> reg;
@@ -22,10 +22,7 @@ int main()
 
     init(ops, reg);
 
-    string input_file;
-
-    cout << "Input file : ";
-    cin >> input_file;
+    string input_file = argv[1];
 
     ifstream in(input_file);
     while (in.peek() != EOF)
@@ -39,6 +36,7 @@ int main()
             operation o = ops[s];
             string instruction = o.opcode;
             unsigned int s1 = instruction.size() - 1;
+
             if (o.num_operands == 0)
             {
                 ; // opcode complete, do nothing
@@ -49,7 +47,7 @@ int main()
 
                 // Rdst
                 in >> r;
-                toupper(r);
+                parse(r);
                 r = reg[r];
                 unsigned int s2 = r.size() - 1;
                 for (int i = 0; i < 3; ++i)
@@ -63,7 +61,7 @@ int main()
 
                 // Rsrc
                 in >> r;
-                toupper(r);
+                parse(r);
                 r = reg[r];
                 unsigned int s2 = r.size() - 1;
                 for (int i = 0; i < 3; ++i)
@@ -73,7 +71,7 @@ int main()
                 
                 // Rdst
                 in >> r;
-                toupper(r);
+                parse(r);
                 r = reg[r];
                 s2 = r.size() - 1;
                 for (int i = 0; i < 3; ++i)
@@ -87,7 +85,7 @@ int main()
 
                 // Rsrc1
                 in >> r;
-                toupper(r);
+                parse(r);
                 r = reg[r];
                 unsigned int s2 = r.size() - 1;
                 for (int i = 0; i < 3; ++i)
@@ -97,7 +95,7 @@ int main()
 
                 // Rsrc2
                 in >> r;
-                toupper(r);
+                parse(r);
                 r = reg[r];
                 s2 = r.size() - 1;
                 for (int i = 0; i < 3; ++i)
@@ -107,7 +105,7 @@ int main()
                 
                 // Rdst
                 in >> r;
-                toupper(r);
+                parse(r);
                 r = reg[r];
                 s2 = r.size() - 1;
                 for (int i = 0; i < 3; ++i)
@@ -127,14 +125,14 @@ int main()
 
                 output[crnt_line] = instruction;
                 ++crnt_line;
-                output[crnt_line] = to_hex(instruction2);
+                output[crnt_line] = to_bin(instruction2);
             }
             else if (o.two_words == 2)
             {
                 string instruction2;
                 in >> instruction2;
 
-                instruction2 = to_hex(instruction2);
+                instruction2 = to_bin(instruction2);
                 unsigned int s2 = instruction2.size() - 1;
                 if (s2 > 16)
                 {
@@ -167,7 +165,7 @@ int main()
         }
         else if (is_hex(s)) // could just add 16'h before ?
         {
-            output[crnt_line] = to_hex(s);
+            output[crnt_line] = to_bin(s);
 
             ++crnt_line;
         }
