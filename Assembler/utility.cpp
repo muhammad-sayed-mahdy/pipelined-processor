@@ -2,13 +2,16 @@
 #include <iostream>
 #include <string>
 #include <algorithm>
+#include <sstream>
+#include <vector>
 
 using namespace std;
 
 string parse(string&);
 string toupper(string&);
+vector<string> split(string, int, bool);
 bool is_hex(string);
-string to_bin(string);
+string to_hex(string);
 
 string parse(string& s)
 {
@@ -34,6 +37,37 @@ string toupper(string& s)
     return s;
 }
 
+vector<string> split(string s, int n, bool t)
+{
+    vector<string> operands;
+    stringstream ss(s);
+    string part;
+    
+    for (int i = 0; i < n-1; ++i)
+    {
+        getline(ss, part, ',');
+        operands.push_back(part);
+    }
+    if (n > 0)
+    {
+        if (t)
+        {
+            getline(ss, part, ',');
+            operands.push_back(part);
+            
+            ss >> part;
+            operands.push_back(part);
+        }
+        else
+        {
+            ss >> part;
+            operands.push_back(part);
+        }
+    }
+
+    return operands;
+}
+
 bool is_hex(string s)
 {
     toupper(s);
@@ -47,7 +81,7 @@ bool is_hex(string s)
     return true;
 }
 
-string to_bin(string num)
+string to_hex(string num)
 {
     string bin;
     toupper(num);

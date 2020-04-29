@@ -14,7 +14,7 @@ unsigned int crnt_line = 0;
 
 void init(map<string, operation>& o, map<string, string>& r);
 
-int main(int argc, char const *argv[])
+int main(int argc, char* argv[])
 {
     map<string, operation> ops;
     map<string, string> reg;
@@ -22,11 +22,6 @@ int main(int argc, char const *argv[])
 
     init(ops, reg);
 
-    if (argc < 2)
-    {
-        printf("Missing argument: input file\n");
-        exit(-1);
-    }
     string input_file = argv[1];
 
     ifstream in(input_file);
@@ -42,6 +37,11 @@ int main(int argc, char const *argv[])
             string instruction = o.opcode;
             unsigned int s1 = instruction.size() - 1;
 
+            string rem;
+            getline(in, rem);
+            vector<string> operands;
+            operands = split(rem, o.num_operands, o.two_words);
+
             if (o.num_operands == 0)
             {
                 ; // opcode complete, do nothing
@@ -51,7 +51,7 @@ int main(int argc, char const *argv[])
                 string r;
 
                 // Rdst
-                in >> r;
+                r = operands[0];
                 parse(r);
                 r = reg[r];
                 unsigned int s2 = r.size() - 1;
@@ -65,7 +65,7 @@ int main(int argc, char const *argv[])
                 string r;
 
                 // Rsrc
-                in >> r;
+                r = operands[0];
                 parse(r);
                 r = reg[r];
                 unsigned int s2 = r.size() - 1;
@@ -75,7 +75,7 @@ int main(int argc, char const *argv[])
                 }
                 
                 // Rdst
-                in >> r;
+                r = operands[1];
                 parse(r);
                 r = reg[r];
                 s2 = r.size() - 1;
@@ -89,7 +89,7 @@ int main(int argc, char const *argv[])
                 string r;
 
                 // Rsrc1
-                in >> r;
+                r = operands[0];
                 parse(r);
                 r = reg[r];
                 unsigned int s2 = r.size() - 1;
@@ -99,7 +99,7 @@ int main(int argc, char const *argv[])
                 }
 
                 // Rsrc2
-                in >> r;
+                r = operands[1];
                 parse(r);
                 r = reg[r];
                 s2 = r.size() - 1;
@@ -109,7 +109,7 @@ int main(int argc, char const *argv[])
                 }
                 
                 // Rdst
-                in >> r;
+                r = operands[2];
                 parse(r);
                 r = reg[r];
                 s2 = r.size() - 1;
@@ -126,18 +126,20 @@ int main(int argc, char const *argv[])
             else if (o.two_words == 1)
             {
                 string instruction2;
-                in >> instruction2;
+                // in >> instruction2;
+                instruction2 = operands[operands.size() - 1];
 
                 output[crnt_line] = instruction;
                 ++crnt_line;
-                output[crnt_line] = to_bin(instruction2);
+                output[crnt_line] = to_hex(instruction2);
             }
             else if (o.two_words == 2)
             {
                 string instruction2;
-                in >> instruction2;
+                // in >> instruction2;
+                instruction2 = operands[operands.size() - 1];
 
-                instruction2 = to_bin(instruction2);
+                instruction2 = to_hex(instruction2);
                 unsigned int s2 = instruction2.size() - 1;
                 if (s2 > 16)
                 {
@@ -170,7 +172,7 @@ int main(int argc, char const *argv[])
         }
         else if (is_hex(s)) // could just add 16'h before ?
         {
-            output[crnt_line] = to_bin(s);
+            output[crnt_line] = to_hex(s);
 
             ++crnt_line;
         }
@@ -183,8 +185,7 @@ int main(int argc, char const *argv[])
     }
     in.close();
 
-    string output_file = input_file.substr(0, input_file.find('.'))+".bin";
-    ofstream out(output_file);
+    ofstream out("output.bin");
     for (auto instrucitons : output)
     {
         out << instrucitons.first << ": " << instrucitons.second << endl;
