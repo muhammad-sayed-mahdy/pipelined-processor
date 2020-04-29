@@ -41,6 +41,7 @@ int main(int argc, char const *argv[])
             operation o = ops[s];
             string instruction = o.opcode;
             unsigned int s1 = instruction.size() - 1;
+
             if (o.num_operands == 0)
             {
                 ; // opcode complete, do nothing
@@ -51,7 +52,7 @@ int main(int argc, char const *argv[])
 
                 // Rdst
                 in >> r;
-                toupper(r);
+                parse(r);
                 r = reg[r];
                 unsigned int s2 = r.size() - 1;
                 for (int i = 0; i < 3; ++i)
@@ -65,7 +66,7 @@ int main(int argc, char const *argv[])
 
                 // Rsrc
                 in >> r;
-                toupper(r);
+                parse(r);
                 r = reg[r];
                 unsigned int s2 = r.size() - 1;
                 for (int i = 0; i < 3; ++i)
@@ -75,7 +76,7 @@ int main(int argc, char const *argv[])
                 
                 // Rdst
                 in >> r;
-                toupper(r);
+                parse(r);
                 r = reg[r];
                 s2 = r.size() - 1;
                 for (int i = 0; i < 3; ++i)
@@ -89,7 +90,7 @@ int main(int argc, char const *argv[])
 
                 // Rsrc1
                 in >> r;
-                toupper(r);
+                parse(r);
                 r = reg[r];
                 unsigned int s2 = r.size() - 1;
                 for (int i = 0; i < 3; ++i)
@@ -99,7 +100,7 @@ int main(int argc, char const *argv[])
 
                 // Rsrc2
                 in >> r;
-                toupper(r);
+                parse(r);
                 r = reg[r];
                 s2 = r.size() - 1;
                 for (int i = 0; i < 3; ++i)
@@ -109,7 +110,7 @@ int main(int argc, char const *argv[])
                 
                 // Rdst
                 in >> r;
-                toupper(r);
+                parse(r);
                 r = reg[r];
                 s2 = r.size() - 1;
                 for (int i = 0; i < 3; ++i)
@@ -129,14 +130,14 @@ int main(int argc, char const *argv[])
 
                 output[crnt_line] = instruction;
                 ++crnt_line;
-                output[crnt_line] = to_hex(instruction2);
+                output[crnt_line] = to_bin(instruction2);
             }
             else if (o.two_words == 2)
             {
                 string instruction2;
                 in >> instruction2;
 
-                instruction2 = to_hex(instruction2);
+                instruction2 = to_bin(instruction2);
                 unsigned int s2 = instruction2.size() - 1;
                 if (s2 > 16)
                 {
@@ -169,7 +170,7 @@ int main(int argc, char const *argv[])
         }
         else if (is_hex(s)) // could just add 16'h before ?
         {
-            output[crnt_line] = to_hex(s);
+            output[crnt_line] = to_bin(s);
 
             ++crnt_line;
         }
