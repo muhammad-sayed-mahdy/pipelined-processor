@@ -14,7 +14,7 @@ unsigned int crnt_line = 0;
 
 void init(map<string, operation>& o, map<string, string>& r);
 
-int main()
+int main(int argc, char const *argv[])
 {
     map<string, operation> ops;
     map<string, string> reg;
@@ -22,10 +22,12 @@ int main()
 
     init(ops, reg);
 
-    string input_file;
-
-    cout << "Input file : ";
-    cin >> input_file;
+    if (argc < 2)
+    {
+        printf("Missing argument: input file\n");
+        exit(-1);
+    }
+    string input_file = argv[1];
 
     ifstream in(input_file);
     while (in.peek() != EOF)
@@ -180,7 +182,8 @@ int main()
     }
     in.close();
 
-    ofstream out("output.bin");
+    string output_file = input_file.substr(0, input_file.find('.'))+".bin";
+    ofstream out(output_file);
     for (auto instrucitons : output)
     {
         out << instrucitons.first << ": " << instrucitons.second << endl;
