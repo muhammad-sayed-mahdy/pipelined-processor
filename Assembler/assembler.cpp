@@ -178,8 +178,11 @@ int main(int argc, char const * argv[])
         }
         else if (is_hex(s)) // could just add 16'h before ?
         {
-            output[crnt_line] = to_bin(s);
+            string bin = to_bin(s, 32);
 
+            output[crnt_line] = bin.substr(0, 16);
+            ++crnt_line;
+            output[crnt_line] = bin.substr(16);
             ++crnt_line;
         }
         else if (s[0] == '#')
@@ -227,5 +230,3 @@ void init(map<string, operation>& o, map<string, string>& r)
     }
     in.close();
 }
-
-

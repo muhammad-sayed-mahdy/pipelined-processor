@@ -11,7 +11,7 @@ string parse(string&);
 string toupper(string&);
 vector<string> split(string, int, bool);
 bool is_hex(string);
-string to_bin(string);
+string to_bin(string, int = 16);
 
 string parse(string& s)
 {
@@ -81,7 +81,7 @@ bool is_hex(string s)
     return true;
 }
 
-string to_bin(string num)
+string to_bin(string num, int nbits)
 {
     string bin;
     toupper(num);
@@ -111,7 +111,7 @@ string to_bin(string num)
         if (c == 'F') v = "1111";
         bin.append(v);
     }
-    while (bin.size() < 16)
+    while (bin.size() < nbits)
     {
         bin.insert(0, "0000");
     }
