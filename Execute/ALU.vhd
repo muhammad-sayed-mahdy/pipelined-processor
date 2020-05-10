@@ -23,10 +23,11 @@ begin
         port map (A, B, Opcode(1 downto 0), F1, Cout1);
 
     F <= F1 when (Opcode(3 downto 2) = "01")
+    else (not A) when (Opcode = "0010")
     else F0;
 
     Cout <= Cout1 when (Opcode(3 downto 2) = "01")
-    else Cout0;
+    else Cout0 when (Opcode(3 downto 2) = "10");
 
     Z <= nor F;     --all zeros
     NF <= '1' when F(n-1) = '1' else '0';

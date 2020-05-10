@@ -10,7 +10,7 @@ entity logic_shift is
         Cout: out std_logic);
 end entity logic_shift;
 
-architecture Logic_arch of logic_shift is
+architecture logic_shift_arch of logic_shift is
     signal Ashl, Ashr: std_logic_vector(n-1 downto 0);
     signal Cshl, Cshr: std_logic;
     begin
@@ -21,12 +21,16 @@ architecture Logic_arch of logic_shift is
         begin
             vAshl := A;
             vAshr := A;
-            l1 : for i in 0 to to_integer(unsigned(B))-1 loop
-                vCshl := vAshl(n-1);
-                vAshl := vAshl(n-2 downto 0) & '0';
-                vCshr := vAshr(0);
-                vAshr := '0' & vAshr(n-1 downto 1);
-            end loop ; -- l1
+            vCshl := '0';
+            vCshr := '0';
+            if to_integer(unsigned(B)) > 0 and to_integer(unsigned(B)) <= n then
+                l1 : for i in 0 to to_integer(unsigned(B))-1 loop
+                    vCshl := vAshl(n-1);
+                    vAshl := vAshl(n-2 downto 0) & '0';
+                    vCshr := vAshr(0);
+                    vAshr := '0' & vAshr(n-1 downto 1);
+                end loop ; -- l1
+            end if ;
             Ashl <= vAshl;
             Ashr <= vAshr;
             Cshl <= vCshl;
@@ -39,6 +43,5 @@ architecture Logic_arch of logic_shift is
         else (A or B);
 
         Cout <= Cshl when (S = "00")
-        else Cshr when (S = "01")
-        else '0';
-    end Logic_arch;
+        else Cshr when (S = "01");
+    end logic_shift_arch;
