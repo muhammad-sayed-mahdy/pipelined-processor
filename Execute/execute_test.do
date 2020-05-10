@@ -71,5 +71,6 @@ run
 
 #swap
 force -freeze sim:/execute_stage/src2Type 10 0
+force -freeze sim:/execute_stage/code 0000 0
 force -freeze sim:/execute_stage/opType 01 0
 run

@@ -34,5 +34,6 @@ architecture execute_stage_arch of execute_stage is
         dst2 <= src1 when (opType = "01")
         else (others => '0');
 
-        FRen <= '1' when (code(3 downto 2) = "01" or code(3 downto 2) = "10" or code = "0010");
+        FRen <= '1' when (code(3 downto 2) = "01" or code(3 downto 2) = "10" or code = "0010")
+        else '0';
     end execute_stage_arch;
