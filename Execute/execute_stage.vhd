@@ -21,18 +21,19 @@ architecture execute_stage_arch of execute_stage is
         EA <= EA1 & secWord;
 
         src2i <= src2 when (src2Type(1) = '1')
-        else (n/2-1 downto 0 => secWord(n/2-1)) & secWord;  -- sign extend
+        else (n/2-1 downto 0 => secWord(n/2-1)) & secWord;  -- sign extend immediate value
 
         FR(3) <= '0';
 
         u0: entity work.alu generic map(n)
             port map (src1, src2i, code, aluDist, FR(2), FR(0), FR(1));
 
-        dst1 <= src2i when (opType = "01" or code = "0000") -- swap or NOP
+        dst1 <= src2i when (opType = "01") -- swap
+        else src1 when (code = "0000") -- NOP
         else aluDist;
 
         dst2 <= src1 when (opType = "01")
-        else (others => '0');
+        else src2i;  -- NOP
 
         FRen <= '1' when (code(3 downto 2) = "01" or code(3 downto 2) = "10" or code = "0010")
         else '0';
