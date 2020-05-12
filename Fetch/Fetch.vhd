@@ -22,9 +22,9 @@ END ENTITY Fetch;
 ARCHITECTURE rtl OF Fetch IS
     COMPONENT reg IS
         GENERIC ( n : integer := 32);
-        PORT( E, Clk,Rst : IN std_logic;
-                d : IN std_logic_vector(n-1 DOWNTO 0);
-                q : OUT std_logic_vector(n-1 DOWNTO 0));
+        PORT( E, Clk,Rst    : IN std_logic;
+                d           : IN std_logic_vector(n-1 DOWNTO 0);
+                q           : OUT std_logic_vector(n-1 DOWNTO 0));
     END COMPONENT;
 
     COMPONENT branch_prediction_ram IS
@@ -49,28 +49,27 @@ ARCHITECTURE rtl OF Fetch IS
 
     -- n-bit adder
     COMPONENT adder IS
-    GENERIC (N : integer := 16);
-    PORT(A, B : IN std_logic_vector(N-1  DOWNTO 0);
-        Cin : IN std_logic;  
-        Cout : OUT std_logic;
-        SUM : OUT std_logic_vector(N-1 DOWNTO 0));
+    GENERIC (N  : integer := 16);
+    PORT(A, B   : IN std_logic_vector(N-1  DOWNTO 0);
+        Cin     : IN std_logic;  
+        Cout    : OUT std_logic;
+        SUM     : OUT std_logic_vector(N-1 DOWNTO 0));
     END COMPONENT;
 
     SIGNAL branch_prediction_out                : std_logic;
     SIGNAL branch_prediction_address            : std_logic_vector (7 downto 0);
     SIGNAL new_address, curr_address, pc_inc    : std_logic_vector (31 downto 0);
-    SIGNAL new_instruction, prev_instruction    : std_logic_vector (15 downto 0);
+    SIGNAL new_instruction                      : std_logic_vector (15 downto 0);
 BEGIN
     PC              : reg GENERIC MAP (32) PORT MAP ('1', clk, rst, new_address, curr_address);
-    instruction_reg : reg GENERIC MAP (16) PORT MAP ('1', clk, rst, new_instruction, prev_instruction);
+    instruction_reg : reg GENERIC MAP (16) PORT MAP ('1', clk, rst, new_instruction, out_instruc);
     bpram           : branch_prediction_ram PORT MAP (clk, rst, jz_singal, branch_prediction_address, zero_flag, branch_prediction_out);
     instruction_mem : rom PORT MAP (curr_address(10 downto 0), new_instruction);
     PC_Adder        : adder GENERIC MAP (32) PORT MAP (curr_address,  "00000000000000000000000000000000", '1', open, pc_inc);
     
     branch_prediction_address <= jz_address WHEN jz_singal = '1'
-    ELSE pc_inc(7 downto 0);
+    ELSE curr_address(7 downto 0);
 
-    out_instruc <= prev_instruction;
     out_address <= new_address;
 
     new_address <= mem_val WHEN mem_signal = '1'

@@ -24,11 +24,11 @@ BEGIN
     BEGIN
         IF (falling_edge(clk) AND we = '1') THEN
             l1: for i in 0 to (busW/dataW)-1 loop
-                memory(to_integer(unsigned(address(addressW - 1 DOWNTO 0))) + (busW/dataW)-1 - i) <= datain((i+1)*dataW-1 downto i*dataW);
+                memory(to_integer(unsigned(address)) + (busW/dataW)-1 - i) <= datain((i+1)*dataW-1 downto i*dataW);
             end loop ; --l1
         ELSIF (rising_edge(clk)) THEN
             l2: for i in 0 to (busW/dataW)-1 loop
-                dataout((i+1)*dataW-1 downto i*dataW) <= memory(to_integer(unsigned(address(addressW - 1 DOWNTO 0))) + (busW/dataW)-1 - i);
+                dataout((i+1)*dataW-1 downto i*dataW) <= memory(to_integer(unsigned(address)) + (busW/dataW)-1 - i);
             end loop; --l2
         END IF;
     END PROCESS;
