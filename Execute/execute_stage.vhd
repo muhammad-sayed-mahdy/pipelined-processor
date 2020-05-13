@@ -21,6 +21,7 @@ architecture execute_stage_arch of execute_stage is
         EA <= EA1 & secWord;
 
         src2i <= src2 when (src2Type(1) = '1')
+        else (0 to 11 => '0') & EA when (src2Type = "01")
         else (n/2-1 downto 0 => secWord(n/2-1)) & secWord;  -- sign extend immediate value
 
         FR(3) <= '0';
