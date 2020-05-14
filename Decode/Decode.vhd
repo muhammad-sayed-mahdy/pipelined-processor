@@ -6,9 +6,9 @@ use work.arrays_pkg.all;
 ENTITY Decode IS
     PORT(   clk                 : in std_logic;
             reg_arr             : in reg_array;
-            spReg               : in std_logic_vector(31 DOWNTO 0);
-            inPort              : in std_logic_vector(31 DOWNTO 0);
+            spReg, inPort       : in std_logic_vector(31 DOWNTO 0);
             instruction         : in std_logic_vector(15 DOWNTO 0);
+            zflag, decision     : in std_logic;
             curinstruction      : out std_logic_vector(3 DOWNTO 0);
             incrementedPc       : inout std_logic_vector(31 DOWNTO 0);
             src1, src2          : out std_logic_vector(31 DOWNTO 0);
@@ -19,7 +19,9 @@ ENTITY Decode IS
             memRead, memWrite   : out std_logic;
             operation           : out std_logic_vector(1 DOWNTO 0);
             memPCWB, registerWB : out std_logic;
-            Rsrc1E, Rsrc2E      : out std_logic
+            Rsrc1E, Rsrc2E      : out std_logic;
+            isJz, chdecision    : out std_logic;
+            rightPc             : out std_logic_vector(31 DOWNTO 0)
         );
 END ENTITY Decode;
 
@@ -40,7 +42,8 @@ BEGIN
 
     curinstruction <= instruction(3 downto 0);
 
-    src1 <= inPort when instruction(15 downto 10) = "100110"
+    src1 <= incrementedPc when instruction(15 downto 9) = "1100001"
+    else inPort when instruction(15 downto 10) = "100110"
     else reg_arr(to_integer(unsigned(auxR1)));
 
     src2 <= spReg when isStack = '1'
@@ -103,5 +106,13 @@ BEGIN
     else "1010" when instruction(15 downto 8) = "10010001"
     else "1011" when instruction(15 downto 8) = "10010010"
     else "0000";
+
+    isJz <= '1' when instruction(15 downto 9) = "1100100"
+    else '0';
+
+    rightPc <= incrementedPc when zflag = '0'
+    else reg_arr(to_integer(unsigned(auxR1)));
+
+    chdecision <= decision XOR zflag;
 
 END archdecode;
