@@ -64,7 +64,8 @@ BEGIN
                                     jz_address => ID_EX (23 DOWNTO 16),
                                     out_instruc => IF_ID (15 DOWNTO 0),
                                     out_address => IF_ID (47 DOWNTO 16)
-                                    -- TODO: add the initial prediction bit ?
+                                    branch_status => IF_ID (48)
+                                    -- TODO: What is skip instruction?
                                 );
 
     GEN_IF_ID : work.register_rise  GENERIC MAP (49)
