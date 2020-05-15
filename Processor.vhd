@@ -21,17 +21,23 @@ ARCHITECTURE arch OF Processor IS
     SIGNAL reg_file_Q : reg_array;
 
     -- TODO: Remove PC
-    SIGNAL PC_enable : std_logic;
-    SIGNAL PC_D       : std_logic_vector (31 DOWNTO 0);
-    SIGNAL PC_Q       : std_logic_vector (31 DOWNTO 0);
+    SIGNAL PC_enable    : std_logic;
+    SIGNAL PC_D         : std_logic_vector (31 DOWNTO 0);
+    SIGNAL PC_Q         : std_logic_vector (31 DOWNTO 0);
     
-    SIGNAL SP_enable : std_logic;
-    SIGNAL SP_D       : std_logic_vector (31 DOWNTO 0);
-    SIGNAL SP_Q       : std_logic_vector (31 DOWNTO 0);
+    SIGNAL SP_enable    : std_logic;
+    SIGNAL SP_D         : std_logic_vector (31 DOWNTO 0);
+    SIGNAL SP_Q         : std_logic_vector (31 DOWNTO 0);
     
-    SIGNAL FR_enable : std_logic;
-    SIGNAL FR_D       : std_logic_vector (3 DOWNTO 0);    -- Z : <0> | N : <1> | C : <2>
-    SIGNAL FR_Q       : std_logic_vector (3 DOWNTO 0);
+    SIGNAL FR_enable    : std_logic;
+    SIGNAL FR_D         : std_logic_vector (3 DOWNTO 0);    -- Z : <0> | N : <1> | C : <2>
+    SIGNAL FR_Q         : std_logic_vector (3 DOWNTO 0);
+
+
+    SIGNAL jz_sig           : std_logic;
+    SIGNAL jz_correction    : std_logic;
+    SIGNAL jz_pc            : std_logic_vector (31 DOWNTO 0);
+    
 
     SIGNAL IF_ID_D    : std_logic_vector (48 DOWNTO 0);
     SIGNAL IF_ID_Q    : std_logic_vector (48 DOWNTO 0);
@@ -48,7 +54,8 @@ ARCHITECTURE arch OF Processor IS
     -- TODO: Save NOP instruction
 
     
-    TYPE state_machine IS (i0, i1, i2, i3, i4);     -- No interrupt, Finishing instructions in the pipeline, Pushing PC, Saving FR, Updating PC
+    -- No interrupt, Finishing instructions in the pipeline <<-- If changed to instructions, still needed? -->>, Pushing PC, Saving FR, Updating PC
+    TYPE state_machine IS (i0, i1, i2, i3, i4);
     SIGNAL state : state_machine;
     VARIABLE cnt : INTEGER RANGE 0 TO 5;
     
@@ -68,20 +75,23 @@ BEGIN
                                     reg_arr => reg_file,
                                     mem_signal => MEM_WB_Q (74),
                                     mem_val => MEM_WB_Q (31 DOWNTO 0),
-                                    -- TODO: Muxed with Interrupt/Reset
-                                    jz_singal => -- from decode with 2 more signals (prediction status and value)
+                                    jz_singal => jz_sig,
+                                    -- TODO: 2 extra signals
+                                     => jz_correction,
+                                     => jz_pc,
                                     zero_flag => FR_Q (0),
                                     jz_address => ID_EX_Q (23 DOWNTO 16),
                                     skip_instruc => NOT ID_EX_Q (121),
                                     out_instruc => IF_ID_D (15 DOWNTO 0),
                                     out_address => IF_ID_D (47 DOWNTO 16),
                                     branch_status => IF_ID_D (48)
+                                    -- TODO: Interrupt/Reset
                                 );
 
     GEN_IF_ID : work.register_rise  GENERIC MAP (49)
                                     PORT MAP (E??, clk, rst => (flushing?), IF_ID_D, IF_ID_Q);
 
-    ID_stage : work.Decode PORT MAP (   clk,
+    ID_stage : work.Decode PORT MAP (   clk => clk,
                                         reg_arr => reg_file_Q,
                                         spReg => SP_Q,
                                         inPort => in_port,
@@ -104,10 +114,9 @@ BEGIN
                                         memPCWB => ID_EX_D (133),
                                         registerWB => ID_EX_D (134),
                                         -- TODO: ALUop and MEMop
-                                        -- TODO: More signals, going to fetch
-                                            -- JZ_signal
-                                            -- Corrected prediction
-                                            -- Corrected PC <31,0>
+                                        isJz => jz_sig,
+                                        chdecision => jz_correction,
+                                        rightPc => jz_pc
                                     );
     ID_EX_D (15 DOWNTO 4) <= (OTHERS => '0');
     ID_EX_D (47 DOWNTO 16) <= IF_ID_Q (47 DOWNTO 16);
@@ -164,7 +173,7 @@ BEGIN
                                     PORT MAP (E??, clk, rst => (flushing?), MEM_WB_D, MEM_WB_Q);
 
     -- TODO: Write Back stage
-    --      Fill  reg_file_D and reg_file_enables
+        -- Fill  reg_file_D and reg_file_enables, SP_D and SP_enable
 
     -- TODO: INT state machines     (and RST?)
     PROCESS (int, clk)
@@ -199,11 +208,14 @@ BEGIN
     BEGIN
         CASE state IS
             WHEN i2 =>
+                NULL;
                 -- TODO: push PC
             WHEN i3 =>
+                NULL;
                 -- TODO: push FR
             WHEN i4 =>
-                -- TODO: PC <= MEM (3 DOWNTO 2);
+                NULL;
+                -- TODO: PC <= MEM (3 DOWNTO 2)
             CASE OTHERS =>
                 NULL;
         END CASE;
