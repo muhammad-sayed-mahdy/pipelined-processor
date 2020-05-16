@@ -19,11 +19,6 @@ ARCHITECTURE arch OF Processor IS
     SIGNAL reg_file_enables : std_logic_vector (7 DOWNTO 0);
     SIGNAL reg_file_D : reg_array;
     SIGNAL reg_file_Q : reg_array;
-
-    -- TODO: Remove PC
-    SIGNAL PC_enable    : std_logic;
-    SIGNAL PC_D         : std_logic_vector (31 DOWNTO 0);
-    SIGNAL PC_Q         : std_logic_vector (31 DOWNTO 0);
     
     SIGNAL SP_enable    : std_logic;
     SIGNAL SP_D         : std_logic_vector (31 DOWNTO 0);
@@ -66,8 +61,7 @@ BEGIN
     GEN_REG : FOR i IN 0 TO 7 GENERATE
         REGX : ENTITY work.reg_fall PORT MAP (reg_file_enables (i), clk, rst, reg_file_D (i), reg_file_Q (i));
     END GENERATE GEN_REG;
-    GEN_PC : ENTITY work.reg_fall PORT MAP (PC_enable, clk, rst, PC_D, PC_Q);
-    GEN_SP : ENTITY work.reg_fall PORT MAP (SP_enable, clk, rst, SP_D, SP_Q);
+    GEN_SP : ENTITY work.reg_fall PORT MAP (SP_enable, clk, '0', SP_D, SP_Q);
     GEN_FR : ENTITY work.reg_fall GENERIC MAP (4) 
                                 PORT MAP (FR_enable, clk, rst, FR_D, FR_Q);
 
@@ -102,7 +96,7 @@ BEGIN
                                         instruction => ID_INPUT (15 DOWNTO 0),
                                         zflag => FR_Q (0),
                                         decision => ID_INPUT (48),
-                                        curinstruction => ID_EX_Q (3 DOWNTO 0),
+                                        curinstruction => ID_EX_D (3 DOWNTO 0),
                                         incrementedPc => ID_INPUT (47 DOWNTO 16),
                                         src1 => ID_EX_D (79 DOWNTO 48),
                                         src2 => ID_EX_D (111 DOWNTO 80),
@@ -180,21 +174,31 @@ BEGIN
 
     -- Write Back Stage
     -- BEGIN
-    reg_file_enables (to_integer(unsigned(MEM_WB_Q(66 DOWNTO 64)))) <= MEM_WB_Q(75);
-    reg_file_D (to_integer(unsigned(MEM_WB_Q(66 DOWNTO 64)))) <= MEM_WB_Q(31 DOWNTO 0);
-
-    reg_file_enables (to_integer(unsigned(MEM_WB_Q(69 DOWNTO 67)))) <= '1' WHEN MEM_WB_Q(73 DOWNTO 72) = "01";
-    reg_file_D (to_integer(unsigned(MEM_WB_Q(69 DOWNTO 67)))) <= MEM_WB_Q(63 DOWNTO 32);
-
     SP_D <= MEM_WB_Q(63 DOWNTO 32);
-    SP_enable <= '1' WHEN MEM_WB_Q(73 DOWNTO 72) = "10";
+    SP_enable <= '1' WHEN MEM_WB_Q(73 DOWNTO 72) = "10"
+                ELSE '0';
 
     out_port    <=      MEM_WB_Q(31 DOWNTO 0)    WHEN    MEM_WB_Q(73 DOWNTO 72) = "11"
                 ELSE    (OTHERS => 'Z');
     -- END
 
-    PROCESS
-    BEGIN)
+    PROCESS (MEM_WB_Q)
+    BEGIN
+        FOR i IN 0 TO 7 LOOP
+            reg_file_enables (i) <= '1' WHEN ((i = (to_integer(unsigned(MEM_WB_Q(66 DOWNTO 64))))) AND (MEM_WB_Q(75) = '1')) 
+                                            OR ((i = (to_integer(unsigned(MEM_WB_Q(69 DOWNTO 67))))) AND (MEM_WB_Q(73 DOWNTO 72) = "01"))
+                                ELSE '0';
+            reg_file_D (i) <= MEM_WB_Q(31 DOWNTO 0) WHEN (i = (to_integer(unsigned(MEM_WB_Q(66 DOWNTO 64)))))
+                            ELSE MEM_WB_Q(63 DOWNTO 32) WHEN (i = (to_integer(unsigned(MEM_WB_Q(69 DOWNTO 67)))))
+                            ELSE (OTHERS => 'Z');
+        END LOOP;
+
+    END PROCESS;
+
+    --PROCESS (rst)
+    --BEGIN
+        
+    --END PROCESS;
 
     PROCESS (int, clk)
     BEGIN
