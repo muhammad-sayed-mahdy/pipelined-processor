@@ -44,11 +44,17 @@ ARCHITECTURE rtl OF Fetch IS
     END COMPONENT;
 
     --Instruction Memory
-    COMPONENT rom IS
-    GENERIC ( n : integer := 16);
-    PORT(
-        address : IN  std_logic_vector(10 DOWNTO 0);
-        dataout : OUT std_logic_vector(n-1 DOWNTO 0));
+    COMPONENT memory IS
+    GENERIC (
+        dataW : INTEGER := 16;
+        busW : INTEGER := 128;
+        addressW : INTEGER := 11);
+    PORT (
+        clk : IN std_logic;
+        we : IN std_logic;
+        address : IN std_logic_vector(addressW - 1 DOWNTO 0);
+        datain : IN std_logic_vector(busW - 1 DOWNTO 0);
+        dataout : OUT std_logic_vector(busW - 1 DOWNTO 0));
     END COMPONENT;
 
     -- n-bit adder
@@ -69,7 +75,7 @@ BEGIN
     PC              : reg_rise GENERIC MAP (32) PORT MAP ('1', clk, rst, new_address, normal_curr_address);
     -- instruction_reg : reg GENERIC MAP (16) PORT MAP ('1', clk, rst, new_instruction, out_instruc);
     bpram           : branch_prediction_ram PORT MAP (clk, rst, branch_we, branch_prediction_address, zero_flag, branch_prediction_out);
-    instruction_mem : rom PORT MAP (curr_address(10 downto 0), new_instruction);
+    instruction_mem : memory GENERIC MAP(16, 16, 11) PORT MAP ('0', '0', curr_address(10 downto 0), "0000000000000000", new_instruction);
     PC_Adder        : adder GENERIC MAP (32) PORT MAP (curr_address,  "00000000000000000000000000000000", '1', open, pc_inc);
     
     branch_prediction_address <= jz_address WHEN jz_signal = '1'
