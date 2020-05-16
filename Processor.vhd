@@ -51,13 +51,15 @@ ARCHITECTURE arch OF Processor IS
     SIGNAL MEM_WB_D   : std_logic_vector (77 DOWNTO 0);
     SIGNAL MEM_WB_Q   : std_logic_vector (77 DOWNTO 0);
 
-    -- TODO: Save NOP instruction
-
     
     -- No interrupt, Finishing instructions in the pipeline <<-- If changed to instructions, still needed? -->>, Pushing PC, Saving FR, Updating PC
     TYPE state_machine IS (i0, i1, i2, i3, i4);
     SIGNAL state : state_machine;
     VARIABLE cnt : INTEGER RANGE 0 TO 5;
+
+    SIGNAL IF_ID_INT    : std_logic_vector (48 DOWNTO 0);
+
+    SIGNAL ID_INPUT     : std_logic_vector (48 DOWNTO 0);
     
 BEGIN
 
@@ -75,10 +77,9 @@ BEGIN
                                     reg_arr => reg_file,
                                     mem_signal => MEM_WB_Q (74),
                                     mem_val => MEM_WB_Q (31 DOWNTO 0),
-                                    jz_singal => jz_sig,
-                                    -- TODO: 2 extra signals
-                                     => jz_correction,
-                                     => jz_pc,
+                                    jz_signal => jz_sig,
+                                    force_pc => jz_correction,
+                                    correct_pc => jz_pc,
                                     zero_flag => FR_Q (0),
                                     jz_address => ID_EX_Q (23 DOWNTO 16),
                                     skip_instruc => NOT ID_EX_Q (121),
@@ -89,16 +90,20 @@ BEGIN
                                 );
 
     GEN_IF_ID : work.register_rise  GENERIC MAP (49)
-                                    PORT MAP (E??, clk, rst => (flushing?), IF_ID_D, IF_ID_Q);
+                                    PORT MAP ('1', clk, rst => (flushing?), IF_ID_D, IF_ID_Q);
+
+    ID_INPUT    <=      IF_ID_Q WHEN state != i2 AND state != i3 AND state != i4
+                ELSE    ID_INT;
 
     ID_stage : work.Decode PORT MAP (   clk => clk,
                                         reg_arr => reg_file_Q,
                                         spReg => SP_Q,
                                         inPort => in_port,
-                                        instruction => IF_ID_Q (15 DOWNTO 0),
+                                        instruction => ID_IN (15 DOWNTO 0),
+                                        zflag => FR_Q (0),
+                                        decision => ID_IN (48),
                                         curinstruction => ID_EX_Q (3 DOWNTO 0),
-                                        incrementedPc => IF_ID_Q (47 DOWNTO 16),
-                                        -- TODO: Split ^ into input and output?
+                                        incrementedPc => ID_IN (47 DOWNTO 16),
                                         src1 => ID_EX_D (79 DOWNTO 48),
                                         src2 => ID_EX_D (111 DOWNTO 80),
                                         Rsrc1 => ID_EX_D (114 DOWNTO 112),
@@ -113,21 +118,21 @@ BEGIN
                                         operation => ID_EX_D (132 DOWNTO 131),
                                         memPCWB => ID_EX_D (133),
                                         registerWB => ID_EX_D (134),
-                                        -- TODO: ALUop and MEMop
                                         isJz => jz_sig,
                                         chdecision => jz_correction,
                                         rightPc => jz_pc
+                                        -- TODO: ALUop and MEMop
                                     );
     ID_EX_D (15 DOWNTO 4) <= (OTHERS => '0');
     ID_EX_D (47 DOWNTO 16) <= IF_ID_Q (47 DOWNTO 16);
 
     GEN_ID_EX : work.register_rise  GENERIC MAP (137)
-                                    PORT MAP (E??, clk, rst => (flushing?), ID_EX_D, ID_EX_Q);
+                                    PORT MAP ('1', clk, rst => (flushing?), ID_EX_D, ID_EX_Q);
 
     EX_stage : work.execute_stage PORT MAP (    src1 => ID_EX_Q (79 DOWNTO 48),
                                                 src2 => ID_EX_Q (111 DOWNTO 80),
                                                 code => ID_EX_Q (128 DOWNTO 125),
-                                                EA1 => ID_EX_Q (3 DOWNTO 0),
+                                                EA1 => ID_EX_Q (15 DOWNTO 0),
                                                 secWord => IF_ID_Q (15 DOWNTO 0),
                                                 src2Type => ID_EX_Q (121 DOWNTO 120),
                                                 opType => ID_EX_Q (132 DOWNTO 131),
@@ -149,7 +154,7 @@ BEGIN
     -- TODO: ALUop and MEMop
 
     GEN_EX_MEM : work.register_rise GENERIC MAP (112)
-                                    PORT MAP (E??, clk, rst => (flushing?), EX_MEM_D, EX_MEM_Q);
+                                    PORT MAP ('1', clk, rst => (flushing?), EX_MEM_D, EX_MEM_Q);
 
     MEM_stage : work.memory_stage PORT MAP (    clk => clk,
                                                 memRead => EX_MEM_Q (104),
@@ -170,12 +175,23 @@ BEGIN
     -- TODO: ALUop and MEMop
 
     GEN_MEM_WB : work.register_rise GENERIC MAP (78)
-                                    PORT MAP (E??, clk, rst => (flushing?), MEM_WB_D, MEM_WB_Q);
+                                    PORT MAP ('1', clk, rst => (flushing?), MEM_WB_D, MEM_WB_Q);
 
-    -- TODO: Write Back stage
-        -- Fill  reg_file_D and reg_file_enables, SP_D and SP_enable
+    -- Write Back Stage
+    -- BEGIN
+    reg_file_enables (to_integer(unsigned(MEM_WB (66 DOWNTO 64)))) <= MEM_WB (75);
+    reg_file_D (to_integer(unsigned(MEM_WB (66 DOWNTO 64)))) <= MEM_WB (31 DOWNTO 0);
 
-    -- TODO: INT state machines     (and RST?)
+    reg_file_enables (to_integer(unsigned(MEM_WB (69 DOWNTO 67)))) <= '1' WHEN MEM_WB (73 DOWNTO 72) = "01";
+    reg_file_D (to_integer(unsigned(MEM_WB (69 DOWNTO 67)))) <= MEM_WB (63 DOWNTO 32);
+
+    SP_D <= MEM_WB (63 DOWNTO 32);
+    SP_enable <= '1' WHEN MEM_WB (73 DOWNTO 72) = "10";
+
+    out_port    <=      MEM_WB (31 DOWNTO 0)    WHEN    MEM_WB (31 DOWNTO 0) = "11";
+                ELSE    (OTHERS => 'Z');
+    -- END
+
     PROCESS (int, clk)
     BEGIN
             IF state = i0 THEN
@@ -208,14 +224,18 @@ BEGIN
     BEGIN
         CASE state IS
             WHEN i2 =>
-                NULL;
-                -- TODO: push PC
+                IF_ID_INT (15 DOWNTO 0) <= "1100001000000000";
+                IF_ID_INT (47 DOWNTO 16) <= ID_EX (47 DOWNTO 16);
+                IF_ID_INT (48) <= 0;
             WHEN i3 =>
-                NULL;
-                -- TODO: push FR
+                IF_ID_INT (15 DOWNTO 0) <= "1100001000000000";
+                IF_ID_INT (47 DOWNTO 20) <= (OTHERS => '0');
+                IF_ID_INT (19 DOWNTO 16) <= FR_Q (3 DOWNTO 0);
+                IF_ID_INT (48) <= 0;
             WHEN i4 =>
-                NULL;
-                -- TODO: PC <= MEM (3 DOWNTO 2)
+                IF_ID_INT (15 DOWNTO 0) <= "1111000000000000"
+                IF_ID_INT (47 DOWNTO 16) <= ID_EX (47 DOWNTO 16);
+                IF_ID_INT (48) <= 0;
             CASE OTHERS =>
                 NULL;
         END CASE;
