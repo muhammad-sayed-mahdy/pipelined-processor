@@ -1,16 +1,16 @@
 LIBRARY IEEE;
 USE IEEE.std_logic_1164.all;
 
-ENTITY reg IS
+ENTITY reg_rise IS
     GENERIC ( n : integer := 32);
     PORT( E, Clk,Rst : IN std_logic;
             d : IN std_logic_vector(n-1 DOWNTO 0);
             q : OUT std_logic_vector(n-1 DOWNTO 0));
-END ENTITY reg;
+END ENTITY reg_rise;
 
 
 
-ARCHITECTURE a_my_nDFF OF reg IS
+ARCHITECTURE a_my_nDFF OF reg_rise IS
 BEGIN
         PROCESS (Clk,Rst)
         BEGIN

@@ -55,7 +55,7 @@ ARCHITECTURE arch OF Processor IS
     -- No interrupt, Finishing instructions in the pipeline <<-- If changed to instructions, still needed? -->>, Pushing PC, Saving FR, Updating PC
     TYPE state_machine IS (i0, i1, i2, i3, i4);
     SIGNAL state : state_machine;
-    VARIABLE cnt : INTEGER RANGE 0 TO 5;
+    -- VARIABLE cnt : INTEGER RANGE 0 TO 5;
 
     SIGNAL IF_ID_INT    : std_logic_vector (48 DOWNTO 0);
 
@@ -64,17 +64,17 @@ ARCHITECTURE arch OF Processor IS
 BEGIN
 
     GEN_REG : FOR i IN 0 TO 7 GENERATE
-        REGX : work.register_fall PORT MAP (reg_file_enables (i), clk, rst, reg_file_D (i), reg_file_Q (i));
+        REGX : ENTITY work.reg_fall PORT MAP (reg_file_enables (i), clk, rst, reg_file_D (i), reg_file_Q (i));
     END GENERATE GEN_REG;
-    GEN_PC : work.register_fall PORT MAP (PC_enable, clk, rst, PC_D, PC_Q);
-    GEN_SP : work.register_fall PORT MAP (SP_enable, clk, rst, SP_D, SP_Q);
-    GEN_FR : work.register_fall GENERIC MAP (4) 
+    GEN_PC : ENTITY work.reg_fall PORT MAP (PC_enable, clk, rst, PC_D, PC_Q);
+    GEN_SP : ENTITY work.reg_fall PORT MAP (SP_enable, clk, rst, SP_D, SP_Q);
+    GEN_FR : ENTITY work.reg_fall GENERIC MAP (4) 
                                 PORT MAP (FR_enable, clk, rst, FR_D, FR_Q);
 
-    IF_stage : work.Fetch PORT MAP (
+    IF_stage : ENTITY work.Fetch PORT MAP (
                                     clk => clk,
                                     rst => rst,
-                                    reg_arr => reg_file,
+                                    reg_arr => reg_file_Q,
                                     mem_signal => MEM_WB_Q (74),
                                     mem_val => MEM_WB_Q (31 DOWNTO 0),
                                     jz_signal => jz_sig,
@@ -89,21 +89,21 @@ BEGIN
                                     -- TODO: Interrupt/Reset
                                 );
 
-    GEN_IF_ID : work.register_rise  GENERIC MAP (49)
-                                    PORT MAP ('1', clk, rst => (flushing?), IF_ID_D, IF_ID_Q);
+    GEN_IF_ID : ENTITY work.reg_rise  GENERIC MAP (49)
+                                    PORT MAP ('1', clk, rst, IF_ID_D, IF_ID_Q);
 
-    ID_INPUT    <=      IF_ID_Q WHEN state != i2 AND state != i3 AND state != i4
-                ELSE    ID_INT;
+    ID_INPUT    <=      IF_ID_Q WHEN NOT ((state = i2) OR (state = i3) OR (state = i4))
+                ELSE    IF_ID_INT;
 
-    ID_stage : work.Decode PORT MAP (   clk => clk,
+    ID_stage : ENTITY work.Decode PORT MAP (   clk => clk,
                                         reg_arr => reg_file_Q,
                                         spReg => SP_Q,
                                         inPort => in_port,
-                                        instruction => ID_IN (15 DOWNTO 0),
+                                        instruction => ID_INPUT (15 DOWNTO 0),
                                         zflag => FR_Q (0),
-                                        decision => ID_IN (48),
+                                        decision => ID_INPUT (48),
                                         curinstruction => ID_EX_Q (3 DOWNTO 0),
-                                        incrementedPc => ID_IN (47 DOWNTO 16),
+                                        incrementedPc => ID_INPUT (47 DOWNTO 16),
                                         src1 => ID_EX_D (79 DOWNTO 48),
                                         src2 => ID_EX_D (111 DOWNTO 80),
                                         Rsrc1 => ID_EX_D (114 DOWNTO 112),
@@ -126,10 +126,10 @@ BEGIN
     ID_EX_D (15 DOWNTO 4) <= (OTHERS => '0');
     ID_EX_D (47 DOWNTO 16) <= IF_ID_Q (47 DOWNTO 16);
 
-    GEN_ID_EX : work.register_rise  GENERIC MAP (137)
-                                    PORT MAP ('1', clk, rst => (flushing?), ID_EX_D, ID_EX_Q);
+    GEN_ID_EX : ENTITY work.reg_rise  GENERIC MAP (137)
+                                    PORT MAP ('1', clk, rst, ID_EX_D, ID_EX_Q);
 
-    EX_stage : work.execute_stage PORT MAP (    src1 => ID_EX_Q (79 DOWNTO 48),
+    EX_stage : ENTITY work.execute_stage PORT MAP (    src1 => ID_EX_Q (79 DOWNTO 48),
                                                 src2 => ID_EX_Q (111 DOWNTO 80),
                                                 code => ID_EX_Q (128 DOWNTO 125),
                                                 EA1 => ID_EX_Q (15 DOWNTO 0),
@@ -141,7 +141,7 @@ BEGIN
                                                 FR => FR_D,
                                                 FRen => FR_enable
                                             );
-    EX_MEM_D (95 DOWNTO 64) <= ID_EX (47 DOWNTO 16);
+    EX_MEM_D (95 DOWNTO 64) <= ID_EX_Q (47 DOWNTO 16);
     EX_MEM_D (98 DOWNTO 96) <= ID_EX_Q (124 DOWNTO 122);
     EX_MEM_D (101 DOWNTO 99) <= ID_EX_Q (114 DOWNTO 112);
     EX_MEM_D (102) <= ID_EX_Q (118);
@@ -153,12 +153,13 @@ BEGIN
     EX_MEM_D (109) <= ID_EX_Q (134);
     -- TODO: ALUop and MEMop
 
-    GEN_EX_MEM : work.register_rise GENERIC MAP (112)
-                                    PORT MAP ('1', clk, rst => (flushing?), EX_MEM_D, EX_MEM_Q);
+    GEN_EX_MEM : ENTITY work.reg_rise GENERIC MAP (112)
+                                    PORT MAP ('1', clk, rst, EX_MEM_D, EX_MEM_Q);
 
-    MEM_stage : work.memory_stage PORT MAP (    clk => clk,
+    MEM_stage :ENTITY  work.memory_stage PORT MAP (    clk => clk,
                                                 memRead => EX_MEM_Q (104),
                                                 memWrite => EX_MEM_Q (105),
+                                                opType => EX_MEM_Q (107 DOWNTO 106),
                                                 oldSP => SP_Q,
                                                 datain => EX_MEM_Q (31 DOWNTO 0),
                                                 address => EX_MEM_Q (63 DOWNTO 32),
@@ -174,37 +175,37 @@ BEGIN
     MEM_WB_D (75) <= EX_MEM_Q (109);
     -- TODO: ALUop and MEMop
 
-    GEN_MEM_WB : work.register_rise GENERIC MAP (78)
-                                    PORT MAP ('1', clk, rst => (flushing?), MEM_WB_D, MEM_WB_Q);
+    GEN_MEM_WB : ENTITY work.reg_rise GENERIC MAP (78)
+                                    PORT MAP ('1', clk, rst, MEM_WB_D, MEM_WB_Q);
 
     -- Write Back Stage
     -- BEGIN
-    reg_file_enables (to_integer(unsigned(MEM_WB (66 DOWNTO 64)))) <= MEM_WB (75);
-    reg_file_D (to_integer(unsigned(MEM_WB (66 DOWNTO 64)))) <= MEM_WB (31 DOWNTO 0);
+    reg_file_enables (to_integer(unsigned(MEM_WB_Q(66 DOWNTO 64)))) <= MEM_WB_Q(75);
+    reg_file_D (to_integer(unsigned(MEM_WB_Q(66 DOWNTO 64)))) <= MEM_WB_Q(31 DOWNTO 0);
 
-    reg_file_enables (to_integer(unsigned(MEM_WB (69 DOWNTO 67)))) <= '1' WHEN MEM_WB (73 DOWNTO 72) = "01";
-    reg_file_D (to_integer(unsigned(MEM_WB (69 DOWNTO 67)))) <= MEM_WB (63 DOWNTO 32);
+    reg_file_enables (to_integer(unsigned(MEM_WB_Q(69 DOWNTO 67)))) <= '1' WHEN MEM_WB_Q(73 DOWNTO 72) = "01";
+    reg_file_D (to_integer(unsigned(MEM_WB_Q(69 DOWNTO 67)))) <= MEM_WB_Q(63 DOWNTO 32);
 
-    SP_D <= MEM_WB (63 DOWNTO 32);
-    SP_enable <= '1' WHEN MEM_WB (73 DOWNTO 72) = "10";
+    SP_D <= MEM_WB_Q(63 DOWNTO 32);
+    SP_enable <= '1' WHEN MEM_WB_Q(73 DOWNTO 72) = "10";
 
-    out_port    <=      MEM_WB (31 DOWNTO 0)    WHEN    MEM_WB (31 DOWNTO 0) = "11";
+    out_port    <=      MEM_WB_Q(31 DOWNTO 0)    WHEN    MEM_WB_Q(73 DOWNTO 72) = "11"
                 ELSE    (OTHERS => 'Z');
     -- END
+
+    PROCESS
+    BEGIN)
 
     PROCESS (int, clk)
     BEGIN
             IF state = i0 THEN
                 IF int = '1' THEN
                     state <= i1;
-                    cnt <= 5;
+                    -- cnt <= 5;
                 END IF;
             ELSIF (state = i1) THEN
                 IF rising_edge(clk) THEN
-                    cnt <= cnt - 1;
-                    IF cnt == 0 THEN
-                        state <= i2;
-                    END IF;
+                    state <= i2;
                 END IF;
             ELSIF rising_edge(clk) THEN
                 CASE state IS
@@ -225,18 +226,18 @@ BEGIN
         CASE state IS
             WHEN i2 =>
                 IF_ID_INT (15 DOWNTO 0) <= "1100001000000000";
-                IF_ID_INT (47 DOWNTO 16) <= ID_EX (47 DOWNTO 16);
-                IF_ID_INT (48) <= 0;
+                IF_ID_INT (47 DOWNTO 16) <= ID_EX_Q (47 DOWNTO 16);
+                IF_ID_INT (48) <= '0';
             WHEN i3 =>
                 IF_ID_INT (15 DOWNTO 0) <= "1100001000000000";
                 IF_ID_INT (47 DOWNTO 20) <= (OTHERS => '0');
                 IF_ID_INT (19 DOWNTO 16) <= FR_Q (3 DOWNTO 0);
-                IF_ID_INT (48) <= 0;
+                IF_ID_INT (48) <= '0';
             WHEN i4 =>
-                IF_ID_INT (15 DOWNTO 0) <= "1111000000000000"
-                IF_ID_INT (47 DOWNTO 16) <= ID_EX (47 DOWNTO 16);
-                IF_ID_INT (48) <= 0;
-            CASE OTHERS =>
+                IF_ID_INT (15 DOWNTO 0) <= "1111000000000000";
+                IF_ID_INT (47 DOWNTO 16) <= ID_EX_Q (47 DOWNTO 16);
+                IF_ID_INT (48) <= '0';
+            WHEN OTHERS =>
                 NULL;
         END CASE;
     END PROCESS;
