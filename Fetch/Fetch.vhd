@@ -67,7 +67,7 @@ ARCHITECTURE rtl OF Fetch IS
     SIGNAL new_instruction                      : std_logic_vector (15 downto 0);
 BEGIN
     PC              : reg GENERIC MAP (32) PORT MAP ('1', clk, rst, new_address, normal_curr_address);
-    instruction_reg : reg GENERIC MAP (16) PORT MAP ('1', clk, rst, new_instruction, out_instruc);
+    -- instruction_reg : reg GENERIC MAP (16) PORT MAP ('1', clk, rst, new_instruction, out_instruc);
     bpram           : branch_prediction_ram PORT MAP (clk, rst, branch_we, branch_prediction_address, zero_flag, branch_prediction_out);
     instruction_mem : rom PORT MAP (curr_address(10 downto 0), new_instruction);
     PC_Adder        : adder GENERIC MAP (32) PORT MAP (curr_address,  "00000000000000000000000000000000", '1', open, pc_inc);
@@ -80,6 +80,7 @@ BEGIN
     curr_address <= normal_curr_address WHEN force_pc = '0'
     ELSE correct_pc;
 
+    out_instruc <= new_instruction;
     out_address <= pc_inc;
     branch_status <= branch_prediction_out;
 
