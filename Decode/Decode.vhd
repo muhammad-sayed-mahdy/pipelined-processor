@@ -47,6 +47,7 @@ BEGIN
     else reg_arr(to_integer(unsigned(auxR1)));
 
     src2 <= spReg when isStack = '1'
+    else (31 downto 2 => '0')&"10" when instruction(15 downto 12) = "1111"
     else reg_arr(to_integer(unsigned(auxR2)));
 
     auxR1 <= instruction(11 downto 9) when instruction(15) = '0' AND (instruction(14) = '1' OR instruction(13) = '1')
@@ -71,7 +72,7 @@ BEGIN
 
     Rdst <= instruction(6 downto 4);
 
-    memRead <= '1' when instruction(15 downto 12) = "1101" OR
+    memRead <= '1' when instruction(15 downto 12) = "1101" OR instruction(15 downto 12) = "1111" OR
      instruction(15 downto 10) = "101000" OR 
      instruction(15 downto 10) = "101100"
     else '0';
@@ -86,7 +87,7 @@ BEGIN
     else "11" when instruction(15 downto 10) = "100101"
     else "00";
 
-    memPCWB <= '1' when instruction(15 downto 12) = "1101"
+    memPCWB <= '1' when instruction(15 downto 12) = "1101" OR instruction(15 downto 12) = "1111"
     else '0';
 
     registerWB <= '1' when instruction(15) = '0' OR
