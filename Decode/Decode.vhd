@@ -113,6 +113,7 @@ BEGIN
     rightPc <= incrementedPc when zflag = '0'
     else reg_arr(to_integer(unsigned(auxR1)));
 
-    chdecision <= decision XOR zflag;
+    chdecision <= decision XOR zflag when instruction(15 downto 9) = "1100100"
+    else '0';
 
 END archdecode;
