@@ -85,9 +85,11 @@ BEGIN
 
     GEN_IF_ID : ENTITY work.reg_rise  GENERIC MAP (49)
                                     PORT MAP ('1', clk, rst, IF_ID_D, IF_ID_Q);
-
-    ID_INPUT    <=      IF_ID_Q WHEN NOT ((state = i2) OR (state = i3) OR (state = i4))
+                                    
+    ID_INPUT    <=      IF_ID_Q (48 DOWNTO 16) & "1110000000000000" WHEN NOT ((state = i2) OR (state = i3) OR (state = i4)) AND ID_EX_Q (121) = '0'
+                ELSE    IF_ID_Q WHEN NOT ((state = i2) OR (state = i3) OR (state = i4))
                 ELSE    IF_ID_INT;
+    
 
     ID_stage : ENTITY work.Decode PORT MAP (   clk => clk,
                                         reg_arr => reg_file_Q,

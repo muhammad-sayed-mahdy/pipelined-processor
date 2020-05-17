@@ -33,9 +33,11 @@ architecture execute_stage_arch of execute_stage is
             port map (src1i, src2i, code, aluDist, FR(2), FR(0), FR(1));
 
         dst1 <= src1 when (code = "0000" or opType = "10") -- NOP or (Stack operation src1 contains data)
+        else src2i when (code = "0001")  -- swap
         else aluDist;
 
         dst2 <= aluDist when (opType = "10")    -- Stack operation output (SP +or- 2)
+        else src1 when (code = "0001")  -- Swap
         else src2i;  -- NOP
 
         FRen <= '1' when (code(3 downto 2) = "01" or code(3 downto 2) = "10" or code = "0010")

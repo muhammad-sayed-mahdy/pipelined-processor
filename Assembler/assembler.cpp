@@ -198,14 +198,15 @@ int main(int argc, char const * argv[])
     ofstream out(output_file);
     for (auto instrucitons : output)
     {
-        out << instrucitons.first << ": " << instrucitons.second << endl;
+        out << instrucitons.second << endl;
     }
     out.close();
 }
 
 void init(map<string, operation>& o, map<string, string>& r)
 {
-    ifstream in("operations_data.txt");
+    ifstream in("Assembler/operations_data.txt");
+    
     while(in.peek() != EOF)
     {
         string name, opcode;
@@ -219,7 +220,7 @@ void init(map<string, operation>& o, map<string, string>& r)
     }
     in.close();
 
-    in.open("registers_data.txt");
+    in.open("Assembler/registers_data.txt");
     while(in.peek() != EOF)
     {
         string name, opcode;

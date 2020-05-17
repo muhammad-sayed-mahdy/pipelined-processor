@@ -98,7 +98,7 @@ BEGIN
      (instruction(15 downto 13) = "101" AND instruction(10) = '0')
     else '0';
 
-    aluCode <= "0001" when auxOp = "01"
+    aluCode <= "0001" when instruction(15 downto 10) = "101010"
     else "0010" when instruction(15 downto 8) = "10010000"
     else "0100" when instruction(15 downto 12) = "0000"
     else "0101" when instruction(15 downto 12) = "0001"
