@@ -96,8 +96,9 @@ BEGIN
                                         instruction => ID_INPUT (15 DOWNTO 0),
                                         zflag => FR_Q (0),
                                         decision => ID_INPUT (48),
+                                        incrementedPcIn => ID_INPUT (47 DOWNTO 16),
                                         curinstruction => ID_EX_D (3 DOWNTO 0),
-                                        incrementedPc => ID_INPUT (47 DOWNTO 16),
+                                        incrementedPcOut => ID_EX_D (47 DOWNTO 16),
                                         src1 => ID_EX_D (79 DOWNTO 48),
                                         src2 => ID_EX_D (111 DOWNTO 80),
                                         Rsrc1 => ID_EX_D (114 DOWNTO 112),
@@ -118,7 +119,8 @@ BEGIN
                                         -- TODO: ALUop and MEMop
                                     );
     ID_EX_D (15 DOWNTO 4) <= (OTHERS => '0');
-    ID_EX_D (47 DOWNTO 16) <= IF_ID_Q (47 DOWNTO 16);
+    -- TODO: ALUop and MEMop
+    ID_EX_D (136 DOWNTO 135)  <= "00";
 
     GEN_ID_EX : ENTITY work.reg_rise  GENERIC MAP (137)
                                     PORT MAP ('1', clk, rst, ID_EX_D, ID_EX_Q);
@@ -145,7 +147,8 @@ BEGIN
     EX_MEM_D (107  DOWNTO 106) <= ID_EX_Q (132 DOWNTO 131);
     EX_MEM_D (108) <= ID_EX_Q (133);
     EX_MEM_D (109) <= ID_EX_Q (134);
-    -- TODO: ALUop and MEMop
+    EX_MEM_D (110) <= ID_EX_Q (135);
+    EX_MEM_D (111) <= ID_EX_Q (136);
 
     GEN_EX_MEM : ENTITY work.reg_rise GENERIC MAP (112)
                                     PORT MAP ('1', clk, rst, EX_MEM_D, EX_MEM_Q);
@@ -167,20 +170,21 @@ BEGIN
     MEM_WB_D (73 DOWNTO 72) <= EX_MEM_Q (107 DOWNTO 106);
     MEM_WB_D (74) <= EX_MEM_Q (108);
     MEM_WB_D (75) <= EX_MEM_Q (109);
-    -- TODO: ALUop and MEMop
+    MEM_WB_D (76) <= EX_MEM_Q (110);
+    MEM_WB_D (77) <= EX_MEM_Q (111);
 
     GEN_MEM_WB : ENTITY work.reg_rise GENERIC MAP (78)
                                     PORT MAP ('1', clk, rst, MEM_WB_D, MEM_WB_Q);
 
     -- Write Back Stage
     -- BEGIN
-    SP_D <= MEM_WB_Q(63 DOWNTO 32);
-    SP_enable <= '1' WHEN MEM_WB_Q(73 DOWNTO 72) = "10"
+    SP_D <= MEM_WB_Q(63 DOWNTO 32) WHEN rst = '0'
+        ELSE std_logic_vector(to_unsigned(2047, SP_D'length));
+    SP_enable <= '1' WHEN MEM_WB_Q(73 DOWNTO 72) = "10" OR rst = '1'
                 ELSE '0';
 
     out_port    <=      MEM_WB_Q(31 DOWNTO 0)    WHEN    MEM_WB_Q(73 DOWNTO 72) = "11"
                 ELSE    (OTHERS => 'Z');
-    -- END
 
     PROCESS (MEM_WB_Q)
     BEGIN
@@ -192,8 +196,8 @@ BEGIN
                             ELSE MEM_WB_Q(63 DOWNTO 32) WHEN (i = (to_integer(unsigned(MEM_WB_Q(69 DOWNTO 67)))))
                             ELSE (OTHERS => 'Z');
         END LOOP;
-
     END PROCESS;
+    -- END
 
     --PROCESS (rst)
     --BEGIN
@@ -242,7 +246,7 @@ BEGIN
                 IF_ID_INT (47 DOWNTO 16) <= ID_EX_Q (47 DOWNTO 16);
                 IF_ID_INT (48) <= '0';
             WHEN OTHERS =>
-                NULL;
+                IF_ID_INT (48 DOWNTO 0) <= (OTHERS => '0');
         END CASE;
     END PROCESS;
 

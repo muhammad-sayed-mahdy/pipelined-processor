@@ -9,8 +9,9 @@ ENTITY Decode IS
             spReg, inPort       : in std_logic_vector(31 DOWNTO 0);
             instruction         : in std_logic_vector(15 DOWNTO 0);
             zflag, decision     : in std_logic;
+            incrementedPcIn     : in std_logic_vector(31 DOWNTO 0);
             curinstruction      : out std_logic_vector(3 DOWNTO 0);
-            incrementedPc       : inout std_logic_vector(31 DOWNTO 0);
+            incrementedPcOut    : out std_logic_vector(31 DOWNTO 0);
             src1, src2          : out std_logic_vector(31 DOWNTO 0);
             Rsrc1, Rsrc2        : out std_logic_vector(2 DOWNTO 0);
             aluSrc2             : out std_logic_vector(1 DOWNTO 0);
@@ -42,7 +43,9 @@ BEGIN
 
     curinstruction <= instruction(3 downto 0);
 
-    src1 <= incrementedPc when instruction(15 downto 9) = "1100001"
+    incrementedPcOut <= incrementedPcIn;
+
+    src1 <= incrementedPcIn when instruction(15 downto 9) = "1100001"
     else inPort when instruction(15 downto 10) = "100110"
     else reg_arr(to_integer(unsigned(auxR1)));
 
@@ -111,7 +114,7 @@ BEGIN
     isJz <= '1' when instruction(15 downto 9) = "1100100"
     else '0';
 
-    rightPc <= incrementedPc when zflag = '0'
+    rightPc <= incrementedPcIn when zflag = '0'
     else reg_arr(to_integer(unsigned(auxR1)));
 
     chdecision <= decision XOR zflag when instruction(15 downto 9) = "1100100"
