@@ -1,4 +1,6 @@
-set file_name {input.bin}
+set file_name {branch.bin}
+
+#project compileoutofdate
 
 vsim -gui work.processor
 
@@ -6,6 +8,7 @@ add wave *
 add wave sim:/processor/IF_stage/instruction_mem/*
 add wave sim:/processor/IF_stage/instruction_mem/memory
 add wave -position insertpoint sim:/processor/IF_stage/PC/*
+add wave -position insertpoint sim:/processor/EX_stage/*
 
 mem load -infile Assembler/tests/${file_name} -filldata 1110000000000000 -fillradix binary -format bin processor/IF_stage/instruction_mem/memory
 

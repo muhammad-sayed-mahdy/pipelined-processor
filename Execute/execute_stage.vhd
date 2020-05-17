@@ -20,10 +20,11 @@ architecture execute_stage_arch of execute_stage is
     begin
         EA <= EA1 & secWord;
 
-        src1i <= std_logic_vector(to_unsigned(2, n)) when (opType = "10")    --src1 is '2' in case of stack operation
+        src1i <= src2  when (opType = "10")     --src1 is SP in case of stack operation
         else src1;
 
-        src2i <= src2 when (src2Type(1) = '1')
+        src2i <= std_logic_vector(to_unsigned(2, n)) when (opType = "10")    --src2 is '2' in case of stack operation
+        else src2 when (src2Type(1) = '1')
         else EA when (src2Type = "01")
         else (n/2-1 downto 0 => secWord(n/2-1)) & secWord;  -- sign extend immediate value
 
