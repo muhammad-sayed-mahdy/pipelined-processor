@@ -50,7 +50,7 @@ BEGIN
     else reg_arr(to_integer(unsigned(auxR1)));
 
     src2 <= spReg when isStack = '1'
-    else (31 downto 2 => '0')&"10" when instruction(15 downto 12) = "1111"
+    else incrementedPcIn when instruction(15 downto 12) = "1111"
     else reg_arr(to_integer(unsigned(auxR2)));
 
     auxR1 <= instruction(11 downto 9) when instruction(15) = '0' AND (instruction(14) = '1' OR instruction(13) = '1')

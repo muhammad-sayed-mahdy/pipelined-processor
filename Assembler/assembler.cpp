@@ -196,6 +196,14 @@ int main(int argc, char const * argv[])
     
     string output_file = input_file.substr(0, input_file.find('.'))+".bin";
     ofstream out(output_file);
+
+    for (int i = 0; i < ((1 << 11) - 2); ++i)
+    {
+        if (!output.count(i))
+        {
+            output[i] = ops["NOP"].opcode;
+        }
+    }
     for (auto instrucitons : output)
     {
         out << instrucitons.second << endl;

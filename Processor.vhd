@@ -48,7 +48,7 @@ ARCHITECTURE arch OF Processor IS
 
     
     -- No interrupt, Finishing instructions in the pipeline <<-- If changed to instructions, still needed? -->>, Pushing PC, Saving FR, Updating PC
-    TYPE state_machine IS (i0, i1, i2, i3, i4);
+    TYPE state_machine IS (i0, i1, i2, i3, i4, r);
     SIGNAL state : state_machine;
     -- VARIABLE cnt : INTEGER RANGE 0 TO 5;
 
@@ -89,9 +89,11 @@ BEGIN
                                     PORT MAP ('1', clk, '0', IF_ID_D, IF_ID_Q);
                                     
     ID_INPUT    <=      IF_ID_RST                                   WHEN rst = '1'
-                ELSE    IF_ID_Q (48 DOWNTO 16) & "1110000000000000" WHEN NOT ((state = i2) OR (state = i3) OR (state = i4)) AND (ID_EX_Q (121) = '0' OR jz_correction = '1')
+                ELSE    IF_ID_Q (48 DOWNTO 16) & "1110000000000000" WHEN NOT ((state = i2) OR (state = i3) OR (state = i4)) AND (ID_EX_Q (121) = '0')
                 ELSE    IF_ID_Q                                     WHEN NOT ((state = i2) OR (state = i3) OR (state = i4))
                 ELSE    IF_ID_INT;
+
+    -- OR jz_correction = '1'
     
 
     ID_stage : ENTITY work.Decode PORT MAP (   
@@ -217,16 +219,13 @@ BEGIN
     END PROCESS;
     -- END
 
-    PROCESS (rst)
+    PROCESS (rst, int, clk)
     BEGIN
-        IF_ID_RST (15 DOWNTO 0) <= "1111000000000000";
-        IF_ID_RST (47 DOWNTO 16) <= (47 DOWNTO 18 => '0', 17 DOWNTO 16 => "00";
-        IF_ID_RST (48) <= '0';
-    END PROCESS;
-
-    PROCESS (int, clk)
-    BEGIN
-            IF state = i0 THEN
+            IF rst = '1' THEN
+                state <= r;
+            ELSIF (state = r) THEN
+                state <= i0;
+            ELSIF state = i0 THEN
                 IF int = '1' THEN
                     state <= i1;
                     -- cnt <= 5;
@@ -263,8 +262,12 @@ BEGIN
                 IF_ID_INT (48) <= '0';
             WHEN i4 =>
                 IF_ID_INT (15 DOWNTO 0) <= "1111000000000000";
-                IF_ID_INT (47 DOWNTO 16) <= (47 DOWNTO 18 => '0', 17 DOWNTO 16 => "10";
+                IF_ID_INT (47 DOWNTO 16) <= (47 DOWNTO 18 => '0', 17 DOWNTO 16 => "10");
                 IF_ID_INT (48) <= '0';
+            WHEN r =>
+                IF_ID_RST (15 DOWNTO 0) <= "1111000000000000";
+                IF_ID_RST (47 DOWNTO 16) <= (47 DOWNTO 18 => '0', 17 DOWNTO 16 => "00");
+                IF_ID_RST (48) <= '0';
             WHEN OTHERS =>
                 IF_ID_INT (48 DOWNTO 0) <= (OTHERS => '0');
         END CASE;
