@@ -3,7 +3,7 @@
 .org 2
 40
 
-.org 32
+.org 20
 
 LDM r2, 5
 ldm r1, 10
@@ -32,7 +32,7 @@ NOP
 out r4
 
 
-.org 64
+.org 40
 #ISR
 
 ldm r7, 8001

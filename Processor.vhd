@@ -17,8 +17,8 @@ END ENTITY Processor;
 ARCHITECTURE arch OF Processor IS
 
     SIGNAL reg_file_enables : std_logic_vector (7 DOWNTO 0);
-    SIGNAL reg_file_D : reg_array;
-    SIGNAL reg_file_Q : reg_array;
+    SIGNAL reg_file_D       : reg_array;
+    SIGNAL reg_file_Q       : reg_array;
     
     SIGNAL SP_enable    : std_logic;
     SIGNAL SP_D         : std_logic_vector (31 DOWNTO 0);
@@ -47,7 +47,7 @@ ARCHITECTURE arch OF Processor IS
     SIGNAL MEM_WB_Q   : std_logic_vector (77 DOWNTO 0);
 
     
-    -- No interrupt, Finishing instructions in the pipeline <<-- If changed to instructions, still needed? -->>, Pushing PC, Saving FR, Updating PC
+    -- Normal operation, Finishing instructions in the pipeline, Pushing PC, Saving FR, Updating PC, Reset
     TYPE state_machine IS (i0, i1, i2, i3, i4, r);
     SIGNAL state : state_machine;
     -- VARIABLE cnt : INTEGER RANGE 0 TO 5;
@@ -88,7 +88,7 @@ BEGIN
     GEN_IF_ID : ENTITY work.reg_rise  GENERIC MAP (49)
                                     PORT MAP ('1', clk, '0', IF_ID_D, IF_ID_Q);
                                     
-    ID_INPUT    <=      IF_ID_RST                                   WHEN rst = '1'
+    ID_INPUT    <=      IF_ID_RST                                   WHEN state = r
                 ELSE    IF_ID_Q (48 DOWNTO 16) & "1110000000000000" WHEN NOT ((state = i2) OR (state = i3) OR (state = i4)) AND (ID_EX_Q (121) = '0')
                 ELSE    IF_ID_Q                                     WHEN NOT ((state = i2) OR (state = i3) OR (state = i4))
                 ELSE    IF_ID_INT;
@@ -130,11 +130,10 @@ BEGIN
     -- TODO: ALUop and MEMop
     ID_OUTPUT (136 DOWNTO 135)  <= "00";
 
-    ID_EX_D <=      ID_OUTPUT WHEN rst = '0'
-            ELSE    ID_OUTPUT (136 DOWNTO 135) & "0000000000" & ID_OUTPUT (124 DOWNTO 0);   -- TODO: Rst data forwarding unit (bits 136-135, 119-118)
+    ID_EX_D <=      ID_OUTPUT;   -- TODO: Rst data forwarding unit (bits 136-135, 119-118)
 
     GEN_ID_EX : ENTITY work.reg_rise  GENERIC MAP (137)
-                                    PORT MAP ('1', clk, rst, ID_EX_D, ID_EX_Q);
+                                    PORT MAP ('1', clk, '0', ID_EX_D, ID_EX_Q);
 
     EX_stage : ENTITY work.execute_stage PORT MAP (
                                                     src1 => ID_EX_Q (79 DOWNTO 48),
@@ -166,7 +165,7 @@ BEGIN
     EX_MEM_D (111) <= ID_EX_Q (136);
 
     GEN_EX_MEM : ENTITY work.reg_rise GENERIC MAP (112)
-                                    PORT MAP ('1', clk, rst, EX_MEM_D, EX_MEM_Q);
+                                    PORT MAP ('1', clk, '0', EX_MEM_D, EX_MEM_Q);
 
     MEM_stage :ENTITY  work.memory_stage PORT MAP (    
                                                     clk => clk,
