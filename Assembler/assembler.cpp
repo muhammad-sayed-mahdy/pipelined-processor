@@ -175,8 +175,6 @@ int main(int argc, char const * argv[])
             string addr;
             in >> addr;
             crnt_line = stoul(addr, nullptr, 16);
-
-            cout << addr << ": " << crnt_line << endl;
         }
         else if (is_hex(s)) // could just add 16'h before ?
         {
