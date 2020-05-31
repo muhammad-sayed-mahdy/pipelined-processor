@@ -17,7 +17,10 @@ ENTITY Fetch IS
             skip_instruc    : in std_logic;
             branch_status   : out std_logic;
             out_instruc     : out std_logic_vector (15 downto 0);
-            out_address     : out std_logic_vector (31 downto 0)
+            out_address     : out std_logic_vector (31 downto 0);
+            -- Forwarding
+            reg_match       : in std_logic;
+            reg_fwd_val     : in std_logic_vector(31 downto 0)
         );
 END ENTITY Fetch;
 
@@ -83,15 +86,16 @@ BEGIN
 
     branch_we <= jz_signal AND (NOT skip_instruc);
 
-    curr_address <= normal_curr_address WHEN force_pc = '0'
-    ELSE correct_pc;
+    curr_address <= mem_val WHEN mem_signal = '1'
+    ELSE correct_pc WHEN force_pc = '1'
+    ELSE reg_fwd_val WHEN reg_match = '1' AND skip_instruc = '0' AND new_instruction(15 downto 12) = "1100" AND (new_instruction(11) = '0' OR branch_prediction_out = '1')
+    ELSE normal_curr_address;
 
     out_instruc <= new_instruction;
     out_address <= pc_inc;
     branch_status <= branch_prediction_out;
 
-    new_address <= mem_val WHEN mem_signal = '1'
-    ELSE reg_arr(to_integer(unsigned(new_instruction(6 downto 4)))) WHEN skip_instruc = '0' AND new_instruction(15 downto 12) = "1100" AND (new_instruction(11) = '0' OR branch_prediction_out = '1')
+    new_address <= reg_arr(to_integer(unsigned(new_instruction(6 downto 4)))) WHEN skip_instruc = '0' AND new_instruction(15 downto 12) = "1100" AND (new_instruction(11) = '0' OR branch_prediction_out = '1')
     ELSE pc_inc;
 END rtl;
 

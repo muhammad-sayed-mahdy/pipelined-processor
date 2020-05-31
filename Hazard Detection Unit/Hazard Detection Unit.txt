@@ -21,8 +21,10 @@ CALL R1				F	F	D	E	M	WB
 -------------------
 (No Stalling)
 IN R1			F	D	E	M	WB
-IADD R2, R1,	F	D	E	M	WB
+IADD R2, R1,F	D	E	M	WB
 51651			F	D	E	M	WB
+LDM R1,     F	D	E	M	WB
+165165          F	D	E	M	WB
 SHL R1, 	F	D	E	M	WB
 45654			F	D	E	M	WB
 SHR R1,		F	D	E	M	WB
@@ -48,3 +50,11 @@ Check
 -----
 POP(in memory): MEM_Read: 1, MEM_OP: 1, Stack: 10, Rdst
 Inst(in execute): Rsrc1, Rsrc2, Rsrc1_enable, Rsrc2_enable
+
+
+-----------------------------------------------------------------------------------------------
+Fetch Forwarding:
+-----------------
+Decode: RdstWB = 1, match (Rdst = Rf)
+Ex: RdstWB = 1, Rdst, Rsrc2, Rsrc2_enable = 1
+M: RdstWB = 1, Rdst, Rsrc2, Rsrc2_enable = 1
