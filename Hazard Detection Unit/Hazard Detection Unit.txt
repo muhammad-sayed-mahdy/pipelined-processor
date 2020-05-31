@@ -1,0 +1,50 @@
+Hazard Detection Unit:
+----------------------
+1- Branch Stalling:
+-------------------
+(2 Stalls)
+POP R1			F	D	E	M	WB
+CALL R1				F	F	F	D	E	M	WB
+------------------
+(1 Stall)
+NOT R1			F	D	E	M	WB
+INC R1			F	D	E	M	WB
+DEC R1			F	D	E	M	WB
+SWAP R1, R2		F	D	E	M	WB
+ADD R2, R3, R1		F	D	E	M	WB
+SUB R2, R3, R1		F	D	E	M	WB
+AND R2, R3, R1		F	D	E	M	WB
+OR R2, R3, R1		F	D	E	M	WB
+LDD R1,		F	D	E	M	WB			
+251651			F	D	E	M	WB
+CALL R1				F	F	D	E	M	WB
+-------------------
+(No Stalling)
+IN R1			F	D	E	M	WB
+IADD R2, R1,	F	D	E	M	WB
+51651			F	D	E	M	WB
+SHL R1, 	F	D	E	M	WB
+45654			F	D	E	M	WB
+SHR R1,		F	D	E	M	WB
+645556			F	D	E	M	WB
+CALL R1				F	D	E	M	WB	
+---------------------------------------
+Check
+-----
+1- Branch Instruction (JMP, JZ, CALL) with skip_instruction = 0 (not an EA or Imm)
+
+2- Having same Rdst
+Decode: NOT	INC	DEC	SWAP	ADD	SUB	AND	OR	POP
+De(D)    ALUsrc2(bit_1) = 1, RdstWB = 1, Rdst, Rsrc2, Rsrc2_enable = 1
+EX:	LDD	POP
+Ex(D)   MEM_Read: 1, MEM_OP: 1, Rdst
+-----------------------------------------------------------------------------------------------
+2- POP Data Hazard Stalling:
+----------------------------
+POP R1      F	D	E	M	WB
+INC R1          F	D	E   E	M	WB	
+---------------------------------------
+Check
+-----
+POP(in memory): MEM_Read: 1, MEM_OP: 1, Stack: 10, Rdst
+Inst(in execute): Rsrc1, Rsrc2, Rsrc1_enable, Rsrc2_enable
