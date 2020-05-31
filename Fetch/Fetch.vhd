@@ -20,7 +20,9 @@ ENTITY Fetch IS
             out_address     : out std_logic_vector (31 downto 0);
             -- Forwarding
             reg_match       : in std_logic;
-            reg_fwd_val     : in std_logic_vector(31 downto 0)
+            reg_fwd_val     : in std_logic_vector(31 downto 0);
+            -- Stalling
+            stall           : in std_logic
         );
 END ENTITY Fetch;
 
@@ -75,7 +77,7 @@ ARCHITECTURE rtl OF Fetch IS
     SIGNAL normal_curr_address                  : std_logic_vector (31 downto 0);
     SIGNAL new_instruction                      : std_logic_vector (15 downto 0);
 BEGIN
-    PC              : reg_rise GENERIC MAP (32) PORT MAP ('1', clk, rst, new_address, normal_curr_address);
+    PC              : reg_rise GENERIC MAP (32) PORT MAP (stall, clk, rst, new_address, normal_curr_address);
     -- instruction_reg : reg GENERIC MAP (16) PORT MAP ('1', clk, rst, new_instruction, out_instruc);
     bpram           : branch_prediction_ram PORT MAP (clk, rst, branch_we, branch_prediction_address, zero_flag, branch_prediction_out);
     instruction_mem : memory GENERIC MAP(16, 16, 11) PORT MAP ('0', '0', curr_address(10 downto 0), "0000000000000000", new_instruction);
