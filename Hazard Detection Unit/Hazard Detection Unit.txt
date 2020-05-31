@@ -37,7 +37,7 @@ Check
 
 2- Having same Rdst
 Decode: NOT	INC	DEC	SWAP	ADD	SUB	AND	OR	POP
-De(D)    ALUsrc2(bit_1) = 1, RdstWB = 1, Rdst, Rsrc2, Rsrc2_enable = 1
+De(D)    ALUsrc2(bit_1) = 1, RdstWB = 1, Rdst, Rsrc1, Operation = 01
 EX:	LDD	POP
 Ex(D)   MEM_Read: 1, MEM_OP: 1, Rdst
 -----------------------------------------------------------------------------------------------
@@ -49,12 +49,12 @@ INC R1          F	D	E   E	M	WB
 Check
 -----
 POP(in memory): MEM_Read: 1, MEM_OP: 1, Stack: 10, Rdst
-Inst(in execute): Rsrc1, Rsrc2, Rsrc1_enable, Rsrc2_enable
+Inst(in execute): Rsrc1, Rsrc2, Rsrc1_enable, Rsrc2_enable, (to be discussed) MEM_OP = 0
 
 
 -----------------------------------------------------------------------------------------------
 Fetch Forwarding:
 -----------------
 Decode: RdstWB = 1, match (Rdst = Rf)
-Ex: RdstWB = 1, Rdst, Rsrc2, Rsrc2_enable = 1
-M: RdstWB = 1, Rdst, Rsrc2, Rsrc2_enable = 1
+Ex: RdstWB = 1, Rdst, Rsrc1, Operation = 01
+M: RdstWB = 1, Rdst, Rsrc1, Operation = 01
