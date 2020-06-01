@@ -26,7 +26,7 @@ ARCHITECTURE arch OF Processor IS
     
     SIGNAL FR_enable    : std_logic;
     SIGNAL FR_EX_en     : std_logic;
-    SIGNAL FR_EX        : std_logic;
+    SIGNAL FR_EX        : std_logic_vector (3 DOWNTO 0);
     SIGNAL FR_D         : std_logic_vector (3 DOWNTO 0);    -- Z : <0> | N : <1> | C : <2>
     SIGNAL FR_Q         : std_logic_vector (3 DOWNTO 0);
 
@@ -158,6 +158,7 @@ BEGIN
                                     PORT MAP (NOT STALL (2), clk, '0', ID_EX_D, ID_EX_Q);
 
     EX_stage : ENTITY work.execute_stage PORT MAP (
+                                                    rst => rst,
                                                     src1 => EX_FWD_1,
                                                     src2 => EX_FWD_2,
                                                     code => ID_EX_Q (128 DOWNTO 125),
@@ -232,7 +233,7 @@ BEGIN
                 ELSE    (OTHERS => 'Z');
 
     FR_enable   <=  MEM_WB_Q (78) OR FR_EX_en;
-    FR_D    <=      FR_EX   WHEN MEM_WB_Q (78)
+    FR_D    <=      FR_EX   WHEN FR_EX_en = '1'
             ELSE    MEM_WB_Q (3 DOWNTO 0);
 
     PROCESS (MEM_WB_Q)
@@ -361,21 +362,26 @@ BEGIN
                 IF_ID_RST (15 DOWNTO 0) <= "1111000000000000";
                 IF_ID_RST (47 DOWNTO 16) <= (47 DOWNTO 18 => '0', 17 DOWNTO 16 => "00");
                 IF_ID_RST (48) <= '0';
+                IF_ID_RST (80 DOWNTO 49) <= in_port (31 DOWNTO 0);
             WHEN i2 =>
-                IF_ID_INT (15 DOWNTO 0) <= "1100001000000000";
-                IF_ID_INT (47 DOWNTO 16) <= ID_EX_Q (47 DOWNTO 16);
-                IF_ID_INT (48) <= '0';
-            WHEN i3 =>
                 IF_ID_INT (15 DOWNTO 0) <= "1100001000000000";
                 IF_ID_INT (47 DOWNTO 20) <= (OTHERS => '0');
                 IF_ID_INT (19 DOWNTO 16) <= FR_Q (3 DOWNTO 0);
                 IF_ID_INT (48) <= '0';
+                IF_ID_INT (80 DOWNTO 49) <= in_port (31 DOWNTO 0);
+            WHEN i3 =>
+                IF_ID_INT (15 DOWNTO 0) <= "1100001000000000";
+                IF_ID_INT (47 DOWNTO 16) <= ID_EX_Q (47 DOWNTO 16);
+                IF_ID_INT (48) <= '0';
+                IF_ID_INT (80 DOWNTO 49) <= in_port (31 DOWNTO 0);
             WHEN i4 =>
                 IF_ID_INT (15 DOWNTO 0) <= "1111000000000000";
                 IF_ID_INT (47 DOWNTO 16) <= (47 DOWNTO 18 => '0', 17 DOWNTO 16 => "10");
                 IF_ID_INT (48) <= '0';
+                IF_ID_INT (80 DOWNTO 49) <= in_port (31 DOWNTO 0);
             WHEN OTHERS =>
-                IF_ID_INT (48 DOWNTO 0) <= (OTHERS => '0');
+                IF_ID_RST <= (OTHERS => '0');
+                IF_ID_INT <= (OTHERS => '0');
         END CASE;
     END PROCESS;
 
