@@ -1,4 +1,4 @@
-set file_name {hzrd.bin}
+set file_name {jz.bin}
 
 project compileoutofdate
 

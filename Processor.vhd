@@ -50,7 +50,6 @@ ARCHITECTURE arch OF Processor IS
     -- Normal operation, Finishing instructions in the pipeline, Pushing PC, Saving FR, Updating PC, Reset
     TYPE state_machine IS (i0, i1, i2, i3, i4, r);
     SIGNAL state : state_machine;
-    -- VARIABLE cnt : INTEGER RANGE 0 TO 5;
 
     SIGNAL IF_ID_INT    : std_logic_vector (80 DOWNTO 0);
     SIGNAL IF_ID_RST    : std_logic_vector (80 DOWNTO 0);
@@ -100,7 +99,7 @@ BEGIN
     FETCH_STALL <= IF_ID_D (80 DOWNTO 16) & "1110000000000000";
     
     FINAL_FETCH <= FETCH_STALL WHEN STALL (0) = '1' OR ID_EX_Q (133) = '1' OR EX_MEM_Q (108) = '1'
-                                --OR jz_correction
+                                OR jz_correction = '1' -- Flushing
             ELSE IF_ID_D;
 
     GEN_IF_ID : ENTITY work.reg_rise GENERIC MAP (81)
@@ -110,17 +109,9 @@ BEGIN
     ID_INPUT    <=      IF_ID_RST                                   WHEN state = r
                 ELSE    IF_ID_INT                                   WHEN (state = i2) OR (state = i3) OR (state = i4)
                 ELSE    IF_ID_Q (80 DOWNTO 16) & "1110000000000000" WHEN (ID_EX_Q (121) = '0')  -- Second word or PC is waiting for new
-                                                                        -- OR BUBBLE (1) = '1' -- Flushing
                                                                         OR (ID_EX_Q (133) = '1' OR EX_MEM_Q (108) = '1' OR MEM_WB_Q (74) = '1') -- Stalling
                 ELSE    IF_ID_Q;
 
-    -- GEN_BUBBLE : ENTITY work.reg_rise GENERIC MAP (4)
-    --                                 PORT MAP ('1', clk, '0', d (0) => (STALL (0) OR STALL (2)),
-    --                                                             d(1) => jz_correction,
-    --                                                             d(2) => STALL (2),
-    --                                                             d(3) => '0',
-    --                                                         q => BUBBLE);  -- ...
-    
     ID_stage : ENTITY work.Decode PORT MAP (   
                                             clk => clk,
                                             reg_arr => reg_file_Q,
@@ -149,13 +140,10 @@ BEGIN
                                             isJz => jz_sig,
                                             chdecision => jz_correction,
                                             rightPc => jz_pc,
-                                            -- TODO: ALUop and MEMop
                                             alu_op => ID_OUTPUT (135),
                                             mem_op => ID_OUTPUT (136)
                                         );
     ID_OUTPUT (15 DOWNTO 4) <= (OTHERS => '0');
-    -- TODO: ALUop and MEMop
-    -- ID_OUTPUT (136 DOWNTO 135)  <= "00";
 
     ID_EX_D <=      ID_OUTPUT;   -- TODO: Rst data forwarding unit (bits 136-135, 119-118)
 
@@ -258,9 +246,9 @@ BEGIN
     -- Additional hardware
     HZRD_UNIT :ENTITY  work.Hazard_Detection_Unit PORT MAP (   
                                                         -- Branch Stalling
-                                                        opcode => IF_ID_D (15 DOWNTO 12),   -- IF_ID_Q
-                                                        br_reg => IF_ID_D (6 DOWNTO 4),     -- IF_ID_Q
-                                                        d_alu_src2 => ID_OUTPUT (121),      -- ID_EX_D or ID_EX_Q
+                                                        opcode => IF_ID_D (15 DOWNTO 12),
+                                                        br_reg => IF_ID_D (6 DOWNTO 4),
+                                                        d_alu_src2 => ID_OUTPUT (121),
                                                         d_rdst_wb => ID_OUTPUT (134),
                                                         d_rdst => ID_OUTPUT (124 DOWNTO 122),
                                                         d_rsrc1 => ID_OUTPUT (114 DOWNTO 112),
@@ -313,7 +301,6 @@ BEGIN
             ELSIF state = i0 THEN
                 IF int = '1' THEN
                     state <= i1;
-                    -- cnt <= 5;
                 END IF;
             ELSIF (state = i1) THEN
                 IF rising_edge(clk) THEN
