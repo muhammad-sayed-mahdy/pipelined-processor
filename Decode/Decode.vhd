@@ -80,7 +80,7 @@ BEGIN
 
     memRead <= '1' when instruction(15 downto 12) = "1101" OR instruction(15 downto 12) = "1111" OR
      instruction(15 downto 10) = "101000" OR 
-     instruction(15 downto 10) = "101100"
+     instruction(15 downto 10) = "101100" OR rti_2 = '1'
     else '0';
 
     memWrite <= '1' when (instruction(15 downto 13) = "101" AND instruction(10) = '1') OR
@@ -89,11 +89,13 @@ BEGIN
 
     auxOp <= "01" when instruction(15 downto 12) = "0010"
     else "10" when instruction(15 downto 11) = "10100" OR
-     (instruction(15 downto 13) = "110" AND (instruction(12) = '1' OR instruction(9) = '1'))
+     (instruction(15 downto 13) = "110" AND (instruction(12) = '1' OR instruction(9) = '1')) OR
+     rti_2 = '1'
     else "11" when instruction(15 downto 10) = "100101"
     else "00";
 
-    memPCWB <= '1' when instruction(15 downto 12) = "1101" OR instruction(15 downto 12) = "1111"
+    memPCWB <= '1' when instruction(15 downto 10) = "110101" OR instruction(15 downto 12) = "1111" OR 
+    rti_2 = '1'
     else '0';
 
     registerWB <= '1' when instruction(15) = '0' OR
@@ -128,5 +130,9 @@ BEGIN
     
     alu_op <= '1' when instruction (15) = '0' or instruction (15 downto 10) = "100100" or instruction (15 downto 10) = "100110" or instruction (15 downto 11) = "10101"
             else '0';
+            
+    frWB <= '1' when instruction(15 downto 10) = "110110"
+    else '0';
+
 
 END archdecode;
