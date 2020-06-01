@@ -24,7 +24,9 @@ ENTITY Decode IS
             isJz, chdecision    : out std_logic;
             rightPc             : out std_logic_vector(31 DOWNTO 0);
             mem_op              : out std_logic;
-            alu_op              : out std_logic
+            alu_op              : out std_logic;
+            frWB                : out std_logic;
+            rti_2               : in std_logic
         );
 END ENTITY Decode;
 

@@ -31,11 +31,11 @@ BEGIN
 
     END PROCESS;
 
-    PROCESS (memory, address)
+    PROCESS (memory, address, re)
     BEGIN
         IF (re = '1') THEN
             l2 : FOR i IN 0 TO (busW/dataW) - 1 LOOP
-                dataout((i + 1) * dataW - 1 DOWNTO i * dataW) <= memory(to_integer(unsigned(address(10 downto 0))) + (busW/dataW) - 1 - i);
+                dataout((i + 1) * dataW - 1 DOWNTO i * dataW) <= memory(to_integer(unsigned(address)) + (busW/dataW) - 1 - i);
             END LOOP; --l2
         END IF;
     END PROCESS;

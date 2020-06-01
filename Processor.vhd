@@ -37,8 +37,8 @@ ARCHITECTURE arch OF Processor IS
     SIGNAL IF_ID_D    : std_logic_vector (80 DOWNTO 0);
     SIGNAL IF_ID_Q    : std_logic_vector (80 DOWNTO 0);
     
-    SIGNAL ID_EX_D    : std_logic_vector (136 DOWNTO 0);
-    SIGNAL ID_EX_Q    : std_logic_vector (136 DOWNTO 0);
+    SIGNAL ID_EX_D    : std_logic_vector (137 DOWNTO 0);
+    SIGNAL ID_EX_Q    : std_logic_vector (137 DOWNTO 0);
     
     SIGNAL EX_MEM_D   : std_logic_vector (111 DOWNTO 0);
     SIGNAL EX_MEM_Q   : std_logic_vector (111 DOWNTO 0);
@@ -57,7 +57,7 @@ ARCHITECTURE arch OF Processor IS
     SIGNAL FETCH_STALL  : std_logic_vector (80 DOWNTO 0);
     SIGNAL FINAL_FETCH  : std_logic_vector (80 DOWNTO 0);
     SIGNAL ID_INPUT     : std_logic_vector (80 DOWNTO 0);
-    SIGNAL ID_OUTPUT    : std_logic_vector (136 DOWNTO 0);
+    SIGNAL ID_OUTPUT    : std_logic_vector (137 DOWNTO 0);
 
     SIGNAL BUBBLE       : std_logic_vector (3 DOWNTO 0);
     SIGNAL STALL        : std_logic_vector (2 DOWNTO 0);        -- IF: <0>, ID: <1>, EX: <2>
@@ -101,17 +101,17 @@ BEGIN
 
     FETCH_STALL <= IF_ID_D (80 DOWNTO 16) & "1110000000000000";
     
-    FINAL_FETCH <= FETCH_STALL WHEN STALL (0) = '1' OR ID_EX_Q (133) = '1' OR EX_MEM_Q (108) = '1'
+    FINAL_FETCH <= FETCH_STALL WHEN STALL (0) = '1' OR STALL (2) = '1' OR ID_EX_Q (133) = '1' OR EX_MEM_Q (108) = '1'
                                 -- OR jz_correction = '1' -- Flushing
             ELSE IF_ID_D;
 
     GEN_IF_ID : ENTITY work.reg_rise GENERIC MAP (81)
-                                    PORT MAP (NOT STALL (0) OR NOT STALL (2), clk, '0', FINAL_FETCH, IF_ID_Q);
+                                    PORT MAP (NOT STALL (0) AND NOT STALL (2), clk, '0', FINAL_FETCH, IF_ID_Q);
 
 
     ID_INPUT    <=      IF_ID_RST                                   WHEN state = r
                 ELSE    IF_ID_INT                                   WHEN (state = i2) OR (state = i3) OR (state = i4)
-                ELSE    IF_ID_Q (80 DOWNTO 16) & "1110000000000000" WHEN (ID_EX_Q (121) = '0')  -- Second word or PC is waiting for new
+                ELSE    IF_ID_Q (80 DOWNTO 16) & "1110000000000000" WHEN (ID_EX_Q (121) = '0')  OR ID_EX_Q (137) = '1' -- Second word
                                                                         OR (ID_EX_Q (133) = '1' OR EX_MEM_Q (108) = '1' OR MEM_WB_Q (74) = '1') -- Stalling
                 ELSE    IF_ID_Q;
 
@@ -144,18 +144,20 @@ BEGIN
                                             chdecision => jz_correction,
                                             rightPc => jz_pc,
                                             alu_op => ID_OUTPUT (135),
-                                            mem_op => ID_OUTPUT (136)
+                                            mem_op => ID_OUTPUT (136),
+                                            frWB => ID_OUTPUT (137),
+                                            rti_2 => ID_EX_Q (137)
                                         );
     ID_OUTPUT (15 DOWNTO 4) <= (OTHERS => '0');
 
-    ID_EX_D <=      ID_OUTPUT;   -- TODO: Rst data forwarding unit (bits 136-135, 119-118)
+    ID_EX_D <= ID_OUTPUT;   -- TODO: Rst data forwarding unit (bits 136-135, 119-118)
 
-    GEN_ID_EX : ENTITY work.reg_rise  GENERIC MAP (137)
+    GEN_ID_EX : ENTITY work.reg_rise  GENERIC MAP (138)
                                     PORT MAP (NOT STALL (2), clk, '0', ID_EX_D, ID_EX_Q);
 
     EX_stage : ENTITY work.execute_stage PORT MAP (
-                                                    src1 => ID_EX_Q (79 DOWNTO 48),
-                                                    src2 => ID_EX_Q (111 DOWNTO 80),
+                                                    src1 => EX_FWD_1,
+                                                    src2 => EX_FWD_2,
                                                     code => ID_EX_Q (128 DOWNTO 125),
                                                     EA1 => ID_EX_Q (15 DOWNTO 0),
                                                     secWord => IF_ID_Q (15 DOWNTO 0),
@@ -164,12 +166,7 @@ BEGIN
                                                     dst1 => EX_MEM_D (31 DOWNTO 0),
                                                     dst2 => EX_MEM_D (63 DOWNTO 32),
                                                     FR => FR_D,
-                                                    FRen => FR_enable,
-                                                    -- forward
-                                                    fwdRsrc1En => '1',
-                                                    fwdRsrc1Val => EX_FWD_1,
-                                                    fwdRsrc2En => '1',
-                                                    fwdRsrc2Val => EX_FWD_2
+                                                    FRen => FR_enable
                                                 );
     EX_MEM_D (95 DOWNTO 64) <= ID_EX_Q (47 DOWNTO 16);
     EX_MEM_D (98 DOWNTO 96) <= ID_EX_Q (124 DOWNTO 122);
@@ -351,6 +348,10 @@ BEGIN
     PROCESS (state)
     BEGIN
         CASE state IS
+            WHEN r =>
+                IF_ID_RST (15 DOWNTO 0) <= "1111000000000000";
+                IF_ID_RST (47 DOWNTO 16) <= (47 DOWNTO 18 => '0', 17 DOWNTO 16 => "00");
+                IF_ID_RST (48) <= '0';
             WHEN i2 =>
                 IF_ID_INT (15 DOWNTO 0) <= "1100001000000000";
                 IF_ID_INT (47 DOWNTO 16) <= ID_EX_Q (47 DOWNTO 16);
@@ -364,10 +365,6 @@ BEGIN
                 IF_ID_INT (15 DOWNTO 0) <= "1111000000000000";
                 IF_ID_INT (47 DOWNTO 16) <= (47 DOWNTO 18 => '0', 17 DOWNTO 16 => "10");
                 IF_ID_INT (48) <= '0';
-            WHEN r =>
-                IF_ID_RST (15 DOWNTO 0) <= "1111000000000000";
-                IF_ID_RST (47 DOWNTO 16) <= (47 DOWNTO 18 => '0', 17 DOWNTO 16 => "00");
-                IF_ID_RST (48) <= '0';
             WHEN OTHERS =>
                 IF_ID_INT (48 DOWNTO 0) <= (OTHERS => '0');
         END CASE;

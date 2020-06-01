@@ -11,4 +11,4 @@ push r1
 pop r2
 std r2, 0
 
-ldd r1, 0
+ldd r3, 0

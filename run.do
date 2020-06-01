@@ -13,6 +13,8 @@ add wave -position insertpoint sim:/processor/MEM_stage/ram/memory
 
 add wave -position insertpoint sim:/processor/MEM_stage/*
 
+add wave -position insertpoint sim:/processor/GEN_IF_ID/*
+
 add wave processor/EX_FWD/*
 add wave processor/EX_stage/*
 
@@ -20,6 +22,9 @@ mem load -infile Assembler/tests/${file_name} -filldata 1110000000000000 -fillra
 
 force -freeze sim:/processor/MEM_stage/ram/memory(1) 0000000000000000
 force -freeze sim:/processor/MEM_stage/ram/memory(3) 0000000100000000
+
+noforce processor/MEM_stage/ram/memory(1)
+noforce processor/MEM_stage/ram/memory(3)
 
 force -freeze sim:/processor/clk 0 0, 1 {50 ps} -r 100
 force processor/rst 0
