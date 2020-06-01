@@ -1,4 +1,4 @@
-set file_name {memory.bin}
+set file_name {Delivery Cases/TwoOperand.bin}
 
 project compileoutofdate
 
@@ -11,14 +11,12 @@ add wave sim:/processor/IF_stage/instruction_mem/memory
 add wave -position insertpoint sim:/processor/IF_stage/PC/*
 add wave -position insertpoint sim:/processor/MEM_stage/ram/memory
 
-add wave -position insertpoint sim:/processor/MEM_stage/*
-
 add wave processor/EX_FWD/*
 add wave processor/EX_stage/*
 
 mem load -infile Assembler/tests/${file_name} -filldata 1110000000000000 -fillradix binary -format bin processor/IF_stage/instruction_mem/memory
 
-force -freeze sim:/processor/MEM_stage/ram/memory(1) 0000000000000000
+force -freeze sim:/processor/MEM_stage/ram/memory(1) 0000000000010000
 force -freeze sim:/processor/MEM_stage/ram/memory(3) 0000000100000000
 
 force -freeze sim:/processor/clk 0 0, 1 {50 ps} -r 100
@@ -49,4 +47,4 @@ run
 run
 noforce in_port
 
-run 1000 ps
+run 4000 ps

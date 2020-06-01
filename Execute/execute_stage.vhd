@@ -30,11 +30,11 @@ architecture execute_stage_arch of execute_stage is
         src2i <= fwdRsrc2Val when (fwdRsrc2En = '1')
         else src2;
 
-        aluSrc1 <= src2  when (opType = "10")     --src1 is SP in case of stack operation
-        else src1;
+        aluSrc1 <= src2i  when (opType = "10")     --src1 is SP in case of stack operation
+        else src1i;
 
         aluSrc2 <= std_logic_vector(to_unsigned(2, n)) when (opType = "10")    --src2 is '2' in case of stack operation
-        else src2 when (src2Type(1) = '1')
+        else src2i when (src2Type(1) = '1')
         else EA when (src2Type = "01")
         else (n/2-1 downto 0 => secWord(n/2-1)) & secWord;  -- sign extend immediate value
 
@@ -43,12 +43,12 @@ architecture execute_stage_arch of execute_stage is
         u0: entity work.alu generic map(n)
             port map (aluSrc1, aluSrc2, code, aluDist, FR(2), FR(0), FR(1));
 
-        dst1 <= src1 when (code = "0000" or opType = "10") -- NOP or (Stack operation src1 contains data)
+        dst1 <= src1i when (code = "0000" or opType = "10") -- NOP or (Stack operation src1 contains data)
         else aluSrc2 when (code = "0001")  -- swap
         else aluDist;
 
         dst2 <= aluDist when (opType = "10")    -- Stack operation output (SP +or- 2)
-        else src1 when (code = "0001")  -- Swap
+        else src1i when (code = "0001")  -- Swap
         else aluSrc2;  -- NOP
 
         FRen <= '1' when (code(3 downto 2) = "01" or code(3 downto 2) = "10" or code = "0010")

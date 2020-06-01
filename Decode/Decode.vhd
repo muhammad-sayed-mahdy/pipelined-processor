@@ -63,8 +63,7 @@ BEGIN
 
     Rsrc1E <= '1' when instruction(15) = '0' OR
      (instruction(15 downto 13) = "100" AND (not(instruction(12 downto 10) = "110"))) OR
-     (instruction(15 downto 13) = "101" AND instruction(10) = '1') OR
-     instruction(15 downto 12) = "1100"
+     (instruction(15 downto 13) = "101" AND instruction(10) = '1')
     else '0';
 
     Rsrc2E <= '1' when instruction(15 downto 14) = "01" OR instruction(15 downto 12) = "0010"

@@ -64,6 +64,9 @@ ARCHITECTURE arch OF Processor IS
 
     SIGNAL IF_FWD_en    : std_logic;
     SIGNAL IF_FWD_val   : std_logic_vector (31 DOWNTO 0);
+
+    SIGNAL EX_FWD_1     : std_logic_vector (31 DOWNTO 0);
+    SIGNAL EX_FWD_2     : std_logic_vector (31 DOWNTO 0);
 BEGIN
 
     GEN_REG : FOR i IN 0 TO 7 GENERATE
@@ -84,7 +87,7 @@ BEGIN
                                             correct_pc => jz_pc,
                                             zero_flag => FR_Q (0),
                                             jz_address => ID_EX_Q (23 DOWNTO 16),
-                                            skip_instruc => NOT ID_EX_Q (121),
+                                            skip_instruc => NOT ID_EX_D (121),
                                             out_instruc => IF_ID_D (15 DOWNTO 0),
                                             out_address => IF_ID_D (47 DOWNTO 16),
                                             branch_status => IF_ID_D (48),
@@ -99,7 +102,7 @@ BEGIN
     FETCH_STALL <= IF_ID_D (80 DOWNTO 16) & "1110000000000000";
     
     FINAL_FETCH <= FETCH_STALL WHEN STALL (0) = '1' OR ID_EX_Q (133) = '1' OR EX_MEM_Q (108) = '1'
-                                OR jz_correction = '1' -- Flushing
+                                -- OR jz_correction = '1' -- Flushing
             ELSE IF_ID_D;
 
     GEN_IF_ID : ENTITY work.reg_rise GENERIC MAP (81)
@@ -163,10 +166,10 @@ BEGIN
                                                     FR => FR_D,
                                                     FRen => FR_enable,
                                                     -- forward
-                                                    fwdRsrc1En => '0',
-                                                    fwdRsrc1Val => (others => '0'),
-                                                    fwdRsrc2En => '0',
-                                                    fwdRsrc2Val => (others => '0')
+                                                    fwdRsrc1En => '1',
+                                                    fwdRsrc1Val => EX_FWD_1,
+                                                    fwdRsrc2En => '1',
+                                                    fwdRsrc2Val => EX_FWD_2
                                                 );
     EX_MEM_D (95 DOWNTO 64) <= ID_EX_Q (47 DOWNTO 16);
     EX_MEM_D (98 DOWNTO 96) <= ID_EX_Q (124 DOWNTO 122);
@@ -292,6 +295,31 @@ BEGIN
                                                 forwarded_Rdst_val => IF_FWD_val
                                             );
 
+    EX_FWD : ENTITY work.forward_execute GENERIC MAP (32)
+                                        PORT MAP (
+                                            Rsrc1 => ID_EX_Q (114 DOWNTO 112),
+                                            Rsrc2 => ID_EX_Q (117 DOWNTO 115),
+                                            Rsrc1_enable => ID_EX_Q (118),
+                                            Rsrc2_enable => ID_EX_Q (119),
+                                            Rdst_WB => MEM_WB_Q (66 DOWNTO 64),
+                                            Rdst_Mem => EX_MEM_Q (98 DOWNTO 96),
+                                            WB_WB => MEM_WB_Q (75),
+                                            Mem_WB => EX_MEM_Q (109),
+                                            Rsrc1_WB => MEM_WB_Q (69 DOWNTO 67),
+                                            Rsrc1_Mem => EX_MEM_Q (101 DOWNTO 99),
+                                            FR1_WB => MEM_WB_Q (31 DOWNTO 0),
+                                            FR2_WB => MEM_WB_Q (63 DOWNTO 32),
+                                            FR1_Mem => EX_MEM_Q (31 DOWNTO 0),
+                                            FR2_Mem => EX_MEM_Q (63 DOWNTO 32),
+                                            decode_Operand1 => ID_EX_Q (79 DOWNTO 48),
+                                            decode_Operand2 => ID_EX_Q (111 DOWNTO 80),
+                                            op_Mem => EX_MEM_Q (107 DOWNTO 106),
+                                            op_WB => MEM_WB_Q (73 DOWNTO 72),
+                                            op_E => ID_EX_Q (132 DOWNTO 131),
+                                            Operand1 => EX_FWD_1,
+                                            Operand2 => EX_FWD_2
+                                        );
+
     PROCESS (rst, int, clk)
     BEGIN
             IF rst = '1' THEN
@@ -347,4 +375,9 @@ BEGIN
 
 END arch;
 
+
+-- Changed all src1 to src1i
+-- Changed all src2 to src2i
+-- Adder memRead to memory.vhd
+--      Added memRead signals to memory modules
 

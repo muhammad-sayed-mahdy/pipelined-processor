@@ -10,6 +10,7 @@ ENTITY memory IS
     PORT (
         clk : IN std_logic;
         we : IN std_logic;
+        re : IN std_logic;
         address : IN std_logic_vector(addressW - 1 DOWNTO 0);
         datain : IN std_logic_vector(busW - 1 DOWNTO 0);
         dataout : OUT std_logic_vector(busW - 1 DOWNTO 0));
@@ -32,8 +33,10 @@ BEGIN
 
     PROCESS (memory, address)
     BEGIN
-        l2 : FOR i IN 0 TO (busW/dataW) - 1 LOOP
-            dataout((i + 1) * dataW - 1 DOWNTO i * dataW) <= memory(to_integer(unsigned(address)) + (busW/dataW) - 1 - i);
-        END LOOP; --l2
+        IF (re = '1') THEN
+            l2 : FOR i IN 0 TO (busW/dataW) - 1 LOOP
+                dataout((i + 1) * dataW - 1 DOWNTO i * dataW) <= memory(to_integer(unsigned(address(10 downto 0))) + (busW/dataW) - 1 - i);
+            END LOOP; --l2
+        END IF;
     END PROCESS;
 END syncrama;

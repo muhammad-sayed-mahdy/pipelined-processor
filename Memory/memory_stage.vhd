@@ -18,7 +18,7 @@ BEGIN
         ELSE address;
 
     ram : ENTITY work.memory GENERIC MAP(dataW => 16, busW => n, addressW => 11)
-        PORT MAP(clk, memWrite, addressi(10 DOWNTO 0), datain, ramDataout);
+        PORT MAP(clk, memWrite, memRead, addressi(10 DOWNTO 0), datain, ramDataout);
     dataout <= ramDataout WHEN (memRead = '1' OR memWrite = '1')
         ELSE datain;
 END memory_stage_arch;
