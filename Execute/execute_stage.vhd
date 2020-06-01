@@ -10,6 +10,7 @@ entity execute_stage is
         secWord: in std_logic_vector(n/2-1 downto 0); -- the second part of EA (16-bit) or Imm
         src2Type: in std_logic_vector(1 downto 0); --(00: imm, 01: EA, 1X: val)
         opType: in std_logic_vector(1 downto 0); --(00: other, 01: swap, 10: stack, 11: out)
+        rst: in std_logic;
         dst1, dst2: out std_logic_vector(n-1 downto 0); --dst2 in case of swap
         FR: out std_logic_vector(3 downto 0);   --flag register value
         FRen: out std_logic);   --flag register enable
@@ -31,7 +32,7 @@ architecture execute_stage_arch of execute_stage is
         FR(3) <= '0';
 
         u0: entity work.alu generic map(n)
-            port map (aluSrc1, aluSrc2, code, aluDist, FR(2), FR(0), FR(1));
+            port map (aluSrc1, aluSrc2, code, rst, aluDist, FR(2), FR(0), FR(1));
 
         dst1 <= src1 when (code = "0000" or opType = "10") -- NOP or (Stack operation src1 contains data)
         else aluSrc2 when (code = "0001")  -- swap

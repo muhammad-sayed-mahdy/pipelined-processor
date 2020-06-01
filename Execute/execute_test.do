@@ -9,7 +9,7 @@ vsim execute_stage
 add wave *
 
 # Arithmetic
-force -freeze sim:/execute_stage/code(3 downto 2) 10 0
+force -freeze sim:/execute_stage/code 1000 0
 
 force -freeze sim:/execute_stage/src1 32'h0F1F 0
 force -freeze sim:/execute_stage/src2 32'h00F0 0
@@ -17,6 +17,9 @@ force -freeze sim:/execute_stage/src2Type 10 0
 force -freeze sim:/execute_stage/opType 00 0
 force -freeze sim:/execute_stage/secWord 32'd0 0
 force -freeze sim:/execute_stage/EA1 32'd0 0
+force -freeze sim:/execute_stage/rst 1 0
+run
+force -freeze sim:/execute_stage/rst 0 0
 
 force -freeze sim:/execute_stage/code(1 downto 0) 00 0
 run
