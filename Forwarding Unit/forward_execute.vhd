@@ -42,16 +42,40 @@ BEGIN
 
     Enable_mem_operand2 <= '0' when Rsrc2_enable = '0'
     else '1' when Rsrc2 = Rdst_Mem AND Mem_WB = '1'
-    else '1' when Rsrc2 = Rsrc1_Mem AND op_Mem = "01"
-    else '1' when op_Mem = "10"
+    else '1' when (Rsrc2 = Rsrc1_Mem AND op_Mem = "01") OR (op_Mem = "10")
     else '0';
 
     Enable_WB_operand2 <= '0' when Rsrc2_enable = '0'
     else '1' when Rsrc2 = Rdst_WB AND WB_WB = '1'
-    else '1' when Rsrc2 = Rsrc1_WB AND op_WB = "01"
-    else '1' when op_WB = "10"
+    else '1' when (Rsrc2 = Rsrc1_WB AND op_WB = "01") OR (op_WB = "10")
     else '0';
 
+    FRsrc1_mem <= decode_Operand1 when Rsrc1_enable = '0'
+    else FR1_Mem when Rsrc1 = Rdst_Mem AND Mem_WB = '1'
+    else FR2_Mem when Rsrc1 = Rsrc1_Mem AND op_Mem = "01"
+    else decode_Operand1;
 
+    FRsrc1_wb <= decode_Operand1 when Rsrc1_enable = '0'
+    else FR1_WB when Rsrc1 = Rdst_WB AND WB_WB = '1'
+    else FR2_WB when Rsrc1 = Rsrc1_WB AND op_WB = "01"
+    else decode_Operand1;
+
+    FRsrc2_mem <= decode_Operand2 when Rsrc2_enable = '0'
+    else FR2_Mem when (Rsrc2 = Rsrc1_Mem AND op_Mem = "01") OR (op_Mem = "10")
+    else FR1_Mem when Rsrc2 = Rdst_Mem AND Mem_WB = '1'
+    else decode_Operand2;
+
+    FRsrc2_wb <= decode_Operand2 when Rsrc2_enable = '0'
+    else FR2_WB when (Rsrc2 = Rsrc1_WB AND op_WB = "01") OR (op_WB = "10")
+    else FR1_WB when Rsrc2 = Rdst_WB AND WB_WB = '1'
+    else decode_Operand2;
+
+    Operand1 <= FRsrc1_mem when Enable_mem_operand1 = '1'
+    else FRsrc1_wb when Enable_WB_operand1 = '1'
+    else decode_Operand1;
+
+    Operand2 <= FRsrc2_mem when Enable_mem_operand2 = '1'
+    else FRsrc2_wb when Enable_WB_operand2 = '1'
+    else decode_Operand2;
 
 END forward_execute_arch;
