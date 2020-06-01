@@ -34,8 +34,8 @@ ARCHITECTURE arch OF Processor IS
     SIGNAL jz_pc            : std_logic_vector (31 DOWNTO 0);
     
 
-    SIGNAL IF_ID_D    : std_logic_vector (48 DOWNTO 0);
-    SIGNAL IF_ID_Q    : std_logic_vector (48 DOWNTO 0);
+    SIGNAL IF_ID_D    : std_logic_vector (80 DOWNTO 0);
+    SIGNAL IF_ID_Q    : std_logic_vector (80 DOWNTO 0);
     
     SIGNAL ID_EX_D    : std_logic_vector (136 DOWNTO 0);
     SIGNAL ID_EX_Q    : std_logic_vector (136 DOWNTO 0);
@@ -52,13 +52,19 @@ ARCHITECTURE arch OF Processor IS
     SIGNAL state : state_machine;
     -- VARIABLE cnt : INTEGER RANGE 0 TO 5;
 
-    SIGNAL IF_ID_INT    : std_logic_vector (48 DOWNTO 0);
-    SIGNAL IF_ID_RST    : std_logic_vector (48 DOWNTO 0);
+    SIGNAL IF_ID_INT    : std_logic_vector (80 DOWNTO 0);
+    SIGNAL IF_ID_RST    : std_logic_vector (80 DOWNTO 0);
 
+    SIGNAL FETCH_STALL  : std_logic_vector (80 DOWNTO 0);
+    SIGNAL FINAL_FETCH  : std_logic_vector (80 DOWNTO 0);
+    SIGNAL ID_INPUT     : std_logic_vector (80 DOWNTO 0);
     SIGNAL ID_OUTPUT    : std_logic_vector (136 DOWNTO 0);
 
-    SIGNAL ID_INPUT     : std_logic_vector (48 DOWNTO 0);
-    
+    SIGNAL BUBBLE       : std_logic_vector (3 DOWNTO 0);
+    SIGNAL STALL        : std_logic_vector (2 DOWNTO 0);        -- IF: <0>, ID: <1>, EX: <2>
+
+    SIGNAL IF_FWD_en    : std_logic;
+    SIGNAL IF_FWD_val   : std_logic_vector (31 DOWNTO 0);
 BEGIN
 
     GEN_REG : FOR i IN 0 TO 7 GENERATE
@@ -82,25 +88,44 @@ BEGIN
                                             skip_instruc => NOT ID_EX_Q (121),
                                             out_instruc => IF_ID_D (15 DOWNTO 0),
                                             out_address => IF_ID_D (47 DOWNTO 16),
-                                            branch_status => IF_ID_D (48)
+                                            branch_status => IF_ID_D (48),
+                                            -- Forwarding
+                                            reg_match => IF_FWD_en,
+                                            reg_fwd_val => IF_FWD_val,
+                                            -- Stalling
+                                            stall => STALL (0) OR STALL (2)
                                         );
+    IF_ID_D (80 DOWNTO 49) <= in_port;
 
-    GEN_IF_ID : ENTITY work.reg_rise  GENERIC MAP (49)
-                                    PORT MAP ('1', clk, '0', IF_ID_D, IF_ID_Q);
-                                    
-    ID_INPUT    <=      IF_ID_RST                                   WHEN state = r
-                ELSE    IF_ID_Q (48 DOWNTO 16) & "1110000000000000" WHEN NOT ((state = i2) OR (state = i3) OR (state = i4)) AND (ID_EX_Q (121) = '0')
-                ELSE    IF_ID_Q                                     WHEN NOT ((state = i2) OR (state = i3) OR (state = i4))
-                ELSE    IF_ID_INT;
-
-    -- OR jz_correction = '1'
+    FETCH_STALL <= IF_ID_D (80 DOWNTO 16) & "1110000000000000";
     
+    FINAL_FETCH <= FETCH_STALL WHEN STALL (0) = '1' OR ID_EX_Q (133) = '1' OR EX_MEM_Q (108) = '1'
+                                --OR jz_correction
+            ELSE IF_ID_D;
 
+    GEN_IF_ID : ENTITY work.reg_rise GENERIC MAP (81)
+                                    PORT MAP (NOT STALL (0) OR NOT STALL (2), clk, '0', FINAL_FETCH, IF_ID_Q);
+
+
+    ID_INPUT    <=      IF_ID_RST                                   WHEN state = r
+                ELSE    IF_ID_INT                                   WHEN (state = i2) OR (state = i3) OR (state = i4)
+                ELSE    IF_ID_Q (80 DOWNTO 16) & "1110000000000000" WHEN (ID_EX_Q (121) = '0')  -- Second word or PC is waiting for new
+                                                                        -- OR BUBBLE (1) = '1' -- Flushing
+                                                                        OR (ID_EX_Q (133) = '1' OR EX_MEM_Q (108) = '1' OR MEM_WB_Q (74) = '1') -- Stalling
+                ELSE    IF_ID_Q;
+
+    -- GEN_BUBBLE : ENTITY work.reg_rise GENERIC MAP (4)
+    --                                 PORT MAP ('1', clk, '0', d (0) => (STALL (0) OR STALL (2)),
+    --                                                             d(1) => jz_correction,
+    --                                                             d(2) => STALL (2),
+    --                                                             d(3) => '0',
+    --                                                         q => BUBBLE);  -- ...
+    
     ID_stage : ENTITY work.Decode PORT MAP (   
                                             clk => clk,
                                             reg_arr => reg_file_Q,
                                             spReg => SP_Q,
-                                            inPort => in_port,
+                                            inPort => IF_ID_Q (80 DOWNTO 49),
                                             instruction => ID_INPUT (15 DOWNTO 0),
                                             zflag => FR_Q (0),
                                             decision => ID_INPUT (48),
@@ -123,17 +148,19 @@ BEGIN
                                             registerWB => ID_OUTPUT (134),
                                             isJz => jz_sig,
                                             chdecision => jz_correction,
-                                            rightPc => jz_pc
+                                            rightPc => jz_pc,
                                             -- TODO: ALUop and MEMop
+                                            alu_op => ID_OUTPUT (135),
+                                            mem_op => ID_OUTPUT (136)
                                         );
     ID_OUTPUT (15 DOWNTO 4) <= (OTHERS => '0');
     -- TODO: ALUop and MEMop
-    ID_OUTPUT (136 DOWNTO 135)  <= "00";
+    -- ID_OUTPUT (136 DOWNTO 135)  <= "00";
 
     ID_EX_D <=      ID_OUTPUT;   -- TODO: Rst data forwarding unit (bits 136-135, 119-118)
 
     GEN_ID_EX : ENTITY work.reg_rise  GENERIC MAP (137)
-                                    PORT MAP ('1', clk, '0', ID_EX_D, ID_EX_Q);
+                                    PORT MAP (NOT STALL (2), clk, '0', ID_EX_D, ID_EX_Q);
 
     EX_stage : ENTITY work.execute_stage PORT MAP (
                                                     src1 => ID_EX_Q (79 DOWNTO 48),
@@ -146,20 +173,27 @@ BEGIN
                                                     dst1 => EX_MEM_D (31 DOWNTO 0),
                                                     dst2 => EX_MEM_D (63 DOWNTO 32),
                                                     FR => FR_D,
-                                                    FRen => FR_enable
+                                                    FRen => FR_enable,
+                                                    -- forward
+                                                    fwdRsrc1En => '0',
+                                                    fwdRsrc1Val => (others => '0'),
+                                                    fwdRsrc2En => '0',
+                                                    fwdRsrc2Val => (others => '0')
                                                 );
     EX_MEM_D (95 DOWNTO 64) <= ID_EX_Q (47 DOWNTO 16);
     EX_MEM_D (98 DOWNTO 96) <= ID_EX_Q (124 DOWNTO 122);
     EX_MEM_D (101 DOWNTO 99) <= ID_EX_Q (114 DOWNTO 112);
     EX_MEM_D (102) <= ID_EX_Q (118); -- TODO: Rst data forwarding unit
     EX_MEM_D (103) <= ID_EX_Q (119); -- ``
-    EX_MEM_D (104) <= ID_EX_Q (129);
-    EX_MEM_D (105) <= ID_EX_Q (130);
-    EX_MEM_D (107  DOWNTO 106)  <=      ID_EX_Q (132 DOWNTO 131) WHEN rst = '0'
-                                ELSE    "00";
-    EX_MEM_D (108)  <=      ID_EX_Q (133) WHEN rst = '0'
+    EX_MEM_D (104)  <=   ID_EX_Q (129)   WHEN rst = '0' AND STALL (2) = '0'
+                    ELSE '0';
+    EX_MEM_D (105)  <= ID_EX_Q (130)   WHEN rst = '0' AND STALL (2) = '0'
+                    ELSE '0';
+    EX_MEM_D (107  DOWNTO 106)  <= ID_EX_Q (132 DOWNTO 131) WHEN rst = '0' AND STALL (2) = '0'
+                                ELSE "00";
+    EX_MEM_D (108)  <=      ID_EX_Q (133) WHEN rst = '0' AND STALL (2) = '0'
                     ELSE    '0';
-    EX_MEM_D (109)  <=      ID_EX_Q (134) WHEN rst = '0'
+    EX_MEM_D (109)  <=      ID_EX_Q (134) WHEN rst = '0' AND STALL (2) = '0'
                     ELSE    '0';
     EX_MEM_D (110) <= ID_EX_Q (135);
     EX_MEM_D (111) <= ID_EX_Q (136);
@@ -211,12 +245,64 @@ BEGIN
                                             OR ((i = (to_integer(unsigned(MEM_WB_Q(69 DOWNTO 67))))) AND (MEM_WB_Q(73 DOWNTO 72) = "01")))
                                             
                                 ELSE '0';
+
             reg_file_D (i) <= MEM_WB_Q(31 DOWNTO 0) WHEN (i = (to_integer(unsigned(MEM_WB_Q(66 DOWNTO 64)))))
                             ELSE MEM_WB_Q(63 DOWNTO 32) WHEN (i = (to_integer(unsigned(MEM_WB_Q(69 DOWNTO 67)))))
                             ELSE (OTHERS => 'Z');
         END LOOP;
     END PROCESS;
     -- END
+
+    STALL (1) <= STALL (2);
+
+    -- Additional hardware
+    HZRD_UNIT :ENTITY  work.Hazard_Detection_Unit PORT MAP (   
+                                                        -- Branch Stalling
+                                                        opcode => IF_ID_D (15 DOWNTO 12),   -- IF_ID_Q
+                                                        br_reg => IF_ID_D (6 DOWNTO 4),     -- IF_ID_Q
+                                                        d_alu_src2 => ID_OUTPUT (121),      -- ID_EX_D or ID_EX_Q
+                                                        d_rdst_wb => ID_OUTPUT (134),
+                                                        d_rdst => ID_OUTPUT (124 DOWNTO 122),
+                                                        d_rsrc1 => ID_OUTPUT (114 DOWNTO 112),
+                                                        d_swap => ID_OUTPUT (132 DOWNTO 131),
+                                                        ex_mem_read => ID_EX_Q (129),
+                                                        ex_mem_op => ID_EX_Q (136),
+                                                        ex_rdst => ID_EX_Q (124 DOWNTO 122),
+                                                        fetch_stall => STALL (0),
+                                                        -- Data Hazard Stalling
+                                                        m_mem_read => EX_MEM_Q (104),
+                                                        m_mem_op => EX_MEM_Q (111),
+                                                        m_stack => EX_MEM_Q (107 DOWNTO 106),
+                                                        m_rdst => EX_MEM_Q (98 DOWNTO 96),
+                                                        ex_rsrc1 => ID_EX_Q (114 DOWNTO 112),
+                                                        ex_rsrc2 => ID_EX_Q (117 DOWNTO 115),
+                                                        ex_rsrc1_enable => ID_EX_Q (118),
+                                                        ex_rsrc2_enable => ID_EX_Q (119),
+                                                        fde_stall => STALL (2)
+                                                    );
+
+    IF_FWD : ENTITY work.forward_fetch GENERIC MAP (32)
+                                        PORT MAP (
+                                                opcode => IF_ID_Q (15 DOWNTO 10),
+                                                Rdst_fetch => IF_ID_D (6 DOWNTO 4),
+                                                Rdst_decode => IF_ID_Q (6 DOWNTO 4),
+                                                Rdst_decode_en => ID_EX_D (134),
+                                                Rdst_decode_val => IF_ID_Q (80 DOWNTO 49),
+                                                Rdst_execute => ID_EX_Q (124 DOWNTO 122),
+                                                Rdst_execute_en => ID_EX_Q (134),
+                                                Rdst_execute_val => EX_MEM_D (31 DOWNTO 0),
+                                                Rsrc1_execute => ID_EX_Q (114 DOWNTO 112),
+                                                execute_opType => ID_EX_Q (132 DOWNTO 131),
+                                                Rsrc1_execute_val => EX_MEM_D (63 DOWNTO 32),
+                                                Rdst_memory => EX_MEM_Q (98 DOWNTO 96),
+                                                Rdst_memory_en => EX_MEM_Q (109),
+                                                Rdst_memory_val => MEM_WB_D (31 DOWNTO 0),
+                                                Rsrc1_memory => EX_MEM_Q (101 DOWNTO 99),
+                                                memory_opType => EX_MEM_Q (107 DOWNTO 106),
+                                                Rsrc1_memory_val => MEM_WB_D (63 DOWNTO 32),
+                                                forwarded_Rdst_en => IF_FWD_en,
+                                                forwarded_Rdst_val => IF_FWD_val
+                                            );
 
     PROCESS (rst, int, clk)
     BEGIN

@@ -22,7 +22,9 @@ ENTITY Decode IS
             memPCWB, registerWB : out std_logic;
             Rsrc1E, Rsrc2E      : out std_logic;
             isJz, chdecision    : out std_logic;
-            rightPc             : out std_logic_vector(31 DOWNTO 0)
+            rightPc             : out std_logic_vector(31 DOWNTO 0);
+            mem_op              : out std_logic;
+            alu_op              : out std_logic
         );
 END ENTITY Decode;
 
@@ -119,5 +121,11 @@ BEGIN
 
     chdecision <= decision XOR zflag when instruction(15 downto 9) = "1100100"
     else '0';
+
+    mem_op <= '1' when instruction (15 downto 10) = "101000" or instruction (15 downto 10) = "101100"
+            else '0';
+    
+    alu_op <= '1' when instruction (15) = '0' or instruction (15 downto 10) = "100100" or instruction (15 downto 10) = "100110" or instruction (15 downto 11) = "10101"
+            else '0';
 
 END archdecode;

@@ -4,6 +4,7 @@ USE IEEE.std_logic_1164.ALL;
 ENTITY forward_fetch IS
     GENERIC (n : INTEGER := 32);
     PORT (
+        opcode : IN std_logic_vector(5 DOWNTO 0);
         Rdst_fetch : IN std_logic_vector(2 DOWNTO 0);
         Rdst_decode : IN std_logic_vector(2 DOWNTO 0);
         Rdst_decode_en : IN std_logic;
@@ -34,7 +35,7 @@ BEGIN
         ELSE
         '0';
 
-    forwarded_Rdst_val <= Rdst_decode_val WHEN ((Rdst_decode_en = '1') AND (Rdst_fetch = Rdst_decode))
+    forwarded_Rdst_val <= Rdst_decode_val WHEN (opcode = "100110")   -- (Rdst_decode_en = '1') AND (Rdst_fetch = Rdst_decode)
         ELSE
         Rdst_execute_val WHEN ((Rdst_execute_en = '1') AND (Rdst_fetch = Rdst_execute))
         ELSE
@@ -42,6 +43,8 @@ BEGIN
         ELSE
         Rdst_memory_val WHEN ((Rdst_memory_en = '1') AND (Rdst_fetch = Rdst_memory))
         ELSE
-        Rsrc1_memory_val WHEN ((memory_opType = "01") AND (Rdst_fetch = Rsrc1_memory));
+        Rsrc1_memory_val WHEN ((memory_opType = "01") AND (Rdst_fetch = Rsrc1_memory))
+        ELSE
+        (others => '0');
 
 END forward_fetch_rtl;
