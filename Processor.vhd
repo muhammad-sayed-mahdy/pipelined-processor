@@ -25,6 +25,8 @@ ARCHITECTURE arch OF Processor IS
     SIGNAL SP_Q         : std_logic_vector (31 DOWNTO 0);
     
     SIGNAL FR_enable    : std_logic;
+    SIGNAL FR_EX_en     : std_logic;
+    SIGNAL FR_EX        : std_logic;
     SIGNAL FR_D         : std_logic_vector (3 DOWNTO 0);    -- Z : <0> | N : <1> | C : <2>
     SIGNAL FR_Q         : std_logic_vector (3 DOWNTO 0);
 
@@ -40,11 +42,11 @@ ARCHITECTURE arch OF Processor IS
     SIGNAL ID_EX_D    : std_logic_vector (137 DOWNTO 0);
     SIGNAL ID_EX_Q    : std_logic_vector (137 DOWNTO 0);
     
-    SIGNAL EX_MEM_D   : std_logic_vector (111 DOWNTO 0);
-    SIGNAL EX_MEM_Q   : std_logic_vector (111 DOWNTO 0);
+    SIGNAL EX_MEM_D   : std_logic_vector (112 DOWNTO 0);
+    SIGNAL EX_MEM_Q   : std_logic_vector (112 DOWNTO 0);
     
-    SIGNAL MEM_WB_D   : std_logic_vector (77 DOWNTO 0);
-    SIGNAL MEM_WB_Q   : std_logic_vector (77 DOWNTO 0);
+    SIGNAL MEM_WB_D   : std_logic_vector (78 DOWNTO 0);
+    SIGNAL MEM_WB_Q   : std_logic_vector (78 DOWNTO 0);
 
     
     -- Normal operation, Finishing instructions in the pipeline, Pushing PC, Saving FR, Updating PC, Reset
@@ -165,8 +167,8 @@ BEGIN
                                                     opType => ID_EX_Q (132 DOWNTO 131),
                                                     dst1 => EX_MEM_D (31 DOWNTO 0),
                                                     dst2 => EX_MEM_D (63 DOWNTO 32),
-                                                    FR => FR_D,
-                                                    FRen => FR_enable
+                                                    FR => FR_EX,
+                                                    FRen => FR_EX_en
                                                 );
     EX_MEM_D (95 DOWNTO 64) <= ID_EX_Q (47 DOWNTO 16);
     EX_MEM_D (98 DOWNTO 96) <= ID_EX_Q (124 DOWNTO 122);
@@ -183,10 +185,12 @@ BEGIN
                     ELSE    '0';
     EX_MEM_D (109)  <=      ID_EX_Q (134) WHEN rst = '0' AND STALL (2) = '0'
                     ELSE    '0';
-    EX_MEM_D (110) <= ID_EX_Q (135);
-    EX_MEM_D (111) <= ID_EX_Q (136);
+    EX_MEM_D (110)  <= ID_EX_Q (135);
+    EX_MEM_D (111)  <= ID_EX_Q (136);
+    EX_MEM_D (112)  <= ID_EX_Q (137) WHEN rst = '0' AND STALL (2) = '0'
+                    ELSE '0';
 
-    GEN_EX_MEM : ENTITY work.reg_rise GENERIC MAP (112)
+    GEN_EX_MEM : ENTITY work.reg_rise GENERIC MAP (113)
                                     PORT MAP ('1', clk, '0', EX_MEM_D, EX_MEM_Q);
 
     MEM_stage :ENTITY  work.memory_stage PORT MAP (    
@@ -210,10 +214,12 @@ BEGIN
                     ELSE    '0';
     MEM_WB_D (75)   <=      EX_MEM_Q (109) WHEN rst = '0'
                     ELSE    '0';
-    MEM_WB_D (76) <= EX_MEM_Q (110);
-    MEM_WB_D (77) <= EX_MEM_Q (111);
+    MEM_WB_D (76)   <= EX_MEM_Q (110);
+    MEM_WB_D (77)   <= EX_MEM_Q (111);
+    MEM_WB_D (78)   <= EX_MEM_Q (112) WHEN rst = '0'
+                    ELSE '0';
 
-    GEN_MEM_WB : ENTITY work.reg_rise GENERIC MAP (78)
+    GEN_MEM_WB : ENTITY work.reg_rise GENERIC MAP (79)
                                     PORT MAP ('1', clk, rst, MEM_WB_D, MEM_WB_Q);
 
     -- Write Back Stage
@@ -222,9 +228,12 @@ BEGIN
         ELSE std_logic_vector(to_unsigned(2046, SP_D'length));
     SP_enable <= '1' WHEN MEM_WB_Q(73 DOWNTO 72) = "10" OR rst = '1'
                 ELSE '0';
-
     out_port    <=      MEM_WB_Q(31 DOWNTO 0)    WHEN    MEM_WB_Q(73 DOWNTO 72) = "11"
                 ELSE    (OTHERS => 'Z');
+
+    FR_enable   <=  MEM_WB_Q (78) OR FR_EX_en;
+    FR_D    <=      FR_EX   WHEN MEM_WB_Q (78)
+            ELSE    MEM_WB_Q (3 DOWNTO 0);
 
     PROCESS (MEM_WB_Q)
     BEGIN
@@ -371,10 +380,4 @@ BEGIN
     END PROCESS;
 
 END arch;
-
-
--- Changed all src1 to src1i
--- Changed all src2 to src2i
--- Adder memRead to memory.vhd
---      Added memRead signals to memory modules
 
