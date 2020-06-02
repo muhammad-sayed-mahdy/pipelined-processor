@@ -17,17 +17,12 @@ add wave processor/EX_FWD/*
 add wave processor/EX_stage/*
 
 mem load -infile Assembler/tests/Delivery\ Cases/${file_name} -filldata 1110000000000000 -fillradix binary -format bin processor/IF_stage/instruction_mem/memory
-
-force -freeze sim:/processor/MEM_stage/ram/memory(1) 0000000000010000
-force -freeze sim:/processor/MEM_stage/ram/memory(3) 0000000100000000
+mem load -infile Assembler/tests/Delivery\ Cases/${file_name} -filldata 1110000000000000 -fillradix binary -endaddress 3 -format bin processor/MEM_stage/ram/memory
 
 force -freeze sim:/processor/clk 0 0, 1 {50 ps} -r 100
 force processor/rst 0
 force processor/int 0
 run
-
-noforce processor/MEM_stage/ram/memory(1)
-noforce processor/MEM_stage/ram/memory(3)
 
 force processor/rst 1
 run

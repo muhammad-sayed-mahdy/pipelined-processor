@@ -365,13 +365,13 @@ BEGIN
                 IF_ID_RST (80 DOWNTO 49) <= in_port (31 DOWNTO 0);
             WHEN i2 =>
                 IF_ID_INT (15 DOWNTO 0) <= "1100001000000000";
-                IF_ID_INT (47 DOWNTO 20) <= (OTHERS => '0');
-                IF_ID_INT (19 DOWNTO 16) <= FR_Q (3 DOWNTO 0);
+                IF_ID_INT (47 DOWNTO 16) <= ID_EX_Q (47 DOWNTO 16);
                 IF_ID_INT (48) <= '0';
                 IF_ID_INT (80 DOWNTO 49) <= in_port (31 DOWNTO 0);
             WHEN i3 =>
                 IF_ID_INT (15 DOWNTO 0) <= "1100001000000000";
-                IF_ID_INT (47 DOWNTO 16) <= ID_EX_Q (47 DOWNTO 16);
+                IF_ID_INT (47 DOWNTO 20) <= (OTHERS => '0');
+                IF_ID_INT (19 DOWNTO 16) <= FR_Q (3 DOWNTO 0);
                 IF_ID_INT (48) <= '0';
                 IF_ID_INT (80 DOWNTO 49) <= in_port (31 DOWNTO 0);
             WHEN i4 =>
