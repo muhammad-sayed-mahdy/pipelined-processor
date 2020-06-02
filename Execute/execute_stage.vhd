@@ -42,6 +42,6 @@ architecture execute_stage_arch of execute_stage is
         else src1 when (code = "0001")  -- Swap
         else aluSrc2;  -- NOP
 
-        FRen <= '1' when (code(3 downto 2) = "01" or code(3 downto 2) = "10" or code = "0010")
+        FRen <= '1' when (code(3 downto 2) = "01" or code(3 downto 2) = "10" or code = "0010" or code = "0011") and (opType /= "10")
         else '0';
     end execute_stage_arch;

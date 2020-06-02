@@ -171,7 +171,7 @@ BEGIN
                                                     FR => FR_EX,
                                                     FRen => FR_EX_en
                                                 );
-    EX_MEM_D (95 DOWNTO 64) <= ID_EX_Q (47 DOWNTO 16);
+    EX_MEM_D (95 DOWNTO 64) <= EX_FWD_2;
     EX_MEM_D (98 DOWNTO 96) <= ID_EX_Q (124 DOWNTO 122);
     EX_MEM_D (101 DOWNTO 99) <= ID_EX_Q (114 DOWNTO 112);
     EX_MEM_D (102) <= ID_EX_Q (118); -- TODO: Rst data forwarding unit
@@ -199,7 +199,7 @@ BEGIN
                                                     memRead => EX_MEM_Q (104),
                                                     memWrite => EX_MEM_Q (105),
                                                     opType => EX_MEM_Q (107 DOWNTO 106),
-                                                    oldSP => SP_Q,
+                                                    oldSP => EX_MEM_Q (95 DOWNTO 64),
                                                     datain => EX_MEM_Q (31 DOWNTO 0),
                                                     address => EX_MEM_Q (63 DOWNTO 32),
                                                     dataout => MEM_WB_D (31 DOWNTO 0)

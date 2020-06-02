@@ -59,3 +59,4 @@ run
 force -freeze sim:/processor/in_port 32'h200 0
 run
 
+run 2000 ps

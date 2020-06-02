@@ -31,7 +31,8 @@ begin
     else Cout0 when (Opcode(3 downto 2) = "10")
     else '0' when (rst = '1');
 
-    Z <= nor F;     --all zeros
+    Z <= '0' when Opcode = "0011"
+    else nor F;     --all zeros
     NF <= '1' when F(n-1) = '1' else '0';
     
 end alu_arch ; 

@@ -104,12 +104,13 @@ BEGIN
 
     aluCode <= "0001" when instruction(15 downto 10) = "101010"
     else "0010" when instruction(15 downto 8) = "10010000"
+    else "0011" when instruction(15 downto 9) = "1100100"
     else "0100" when instruction(15 downto 12) = "0000"
     else "0101" when instruction(15 downto 12) = "0001"
     else "0110" when instruction(15 downto 12) = "0110"
     else "0111" when instruction(15 downto 12) = "0111"
-    else "1000" when instruction(15 downto 12) = "0011" OR instruction(15 downto 12) = "0100" OR
-     (isStack = '1' AND (instruction(15 downto 10) = "101000" OR instruction(15 downto 12) = "1101")) 
+    else "1000" when instruction(15 downto 12) = "0011" OR instruction(15 downto 12) = "0100" OR rti_2 = '1' OR
+     (isStack = '1' AND (instruction(15 downto 10) = "101000" OR instruction(15 downto 12) = "1101"))
     else "1001" when instruction(15 downto 12) = "0101" OR isStack = '1'
     else "1010" when instruction(15 downto 8) = "10010001"
     else "1011" when instruction(15 downto 8) = "10010010"
