@@ -7,6 +7,7 @@ ENTITY Hazard_Detection_Unit IS
             -- Branch Stalling
             opcode          : in std_logic_vector(3 downto 0);
             br_reg          : in std_logic_vector(2 downto 0);
+            d_opcode        : in std_logic_vector(5 downto 0);
             d_alu_src2      : in std_logic;
             d_rdst_wb       : in std_logic;
             d_rdst          : in std_logic_vector(2 downto 0);
@@ -34,8 +35,8 @@ ARCHITECTURE rtl OF Hazard_Detection_Unit IS
     SIGNAL m_pop, instruc_hazard    : std_logic;
     
 BEGIN
-    D_error <= '1' WHEN (((br_reg = d_rdst) OR ((br_reg = d_rsrc1) AND (d_swap = "01"))) 
-                            AND (d_alu_src2 = '1') AND (d_rdst_wb = '1'))
+    D_error <= '1' WHEN (((br_reg = d_rdst) OR ((br_reg = d_rsrc1) AND (d_swap = "01")))
+                            AND (d_alu_src2 = '1') AND (d_rdst_wb = '1') AND (d_opcode /= "100110"))
     ELSE '0';
 
     E_error <= '1' WHEN ((br_reg = ex_rdst) AND (ex_mem_read = '1') AND (ex_mem_op = '1'))

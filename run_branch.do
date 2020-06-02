@@ -16,6 +16,8 @@ add wave -position insertpoint sim:/processor/MEM_stage/*
 add wave processor/EX_FWD/*
 add wave processor/EX_stage/*
 
+add wave -position insertpoint sim:/processor/HZRD_UNIT/*
+
 mem load -infile Assembler/tests/Delivery\ Cases/${file_name} -filldata 1110000000000000 -fillradix binary -format bin processor/IF_stage/instruction_mem/memory
 mem load -infile Assembler/tests/Delivery\ Cases/${file_name} -filldata 1110000000000000 -fillradix binary -endaddress 3 -format bin processor/MEM_stage/ram/memory
 

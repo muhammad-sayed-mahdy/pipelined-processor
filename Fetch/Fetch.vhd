@@ -94,6 +94,7 @@ BEGIN
     branch_we <= jz_signal AND (NOT skip_instruc);
 
     curr_address <= mem_val WHEN mem_signal = '1'
+    ELSE reg_fwd_val WHEN force_pc = '1' AND zero_flag = '1' AND reg_match = '1'
     ELSE correct_pc WHEN force_pc = '1'
     ELSE normal_curr_address;
 
@@ -104,8 +105,8 @@ BEGIN
     correct_dst <= '1' WHEN skip_instruc = '0' AND new_instruction(15 downto 12) = "1100" AND (new_instruction(11) = '0' OR branch_prediction_out = '1')
                 ELSE '0';
 
-    new_address <= reg_fwd_val WHEN correct_dst = '1' AND reg_match = '1' AND stall = '0'
-    ELSE reg_arr(to_integer(unsigned(new_instruction(6 downto 4)))) WHEN correct_dst = '1'
+    new_address <= reg_fwd_val WHEN skip_instruc = '0' AND new_instruction(15 downto 12) = "1100" AND (new_instruction(11) = '0' OR zero_flag = '1') AND reg_match = '1' AND stall = '0'
+    ELSE reg_arr(to_integer(unsigned(new_instruction(6 downto 4)))) WHEN skip_instruc = '0' AND new_instruction(15 downto 12) = "1100" AND (new_instruction(11) = '0' OR branch_prediction_out = '1')
     ELSE pc_inc;
 END rtl;
 

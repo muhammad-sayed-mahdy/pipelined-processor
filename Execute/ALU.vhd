@@ -33,6 +33,6 @@ begin
 
     Z <= '0' when Opcode = "0011"
     else nor F;     --all zeros
-    NF <= '1' when F(n-1) = '1' else '0';
+    NF <= '1' when F(n-1) = '1' AND Opcode /= "0011" else '0' when Opcode /= "0011";
     
 end alu_arch ; 

@@ -108,7 +108,7 @@ BEGIN
             ELSE IF_ID_D;
 
     GEN_IF_ID : ENTITY work.reg_rise GENERIC MAP (81)
-                                    PORT MAP (NOT STALL (0) AND NOT STALL (2), clk, '0', FINAL_FETCH, IF_ID_Q);
+                                    PORT MAP (NOT STALL (2), clk, '0', FINAL_FETCH, IF_ID_Q);
 
 
     ID_INPUT    <=      IF_ID_RST                                   WHEN state = r
@@ -258,6 +258,7 @@ BEGIN
                                                         -- Branch Stalling
                                                         opcode => IF_ID_D (15 DOWNTO 12),
                                                         br_reg => IF_ID_D (6 DOWNTO 4),
+                                                        d_opcode => ID_INPUT (15 downto 10),
                                                         d_alu_src2 => ID_OUTPUT (121),
                                                         d_rdst_wb => ID_OUTPUT (134),
                                                         d_rdst => ID_OUTPUT (124 DOWNTO 122),
@@ -284,6 +285,8 @@ BEGIN
                                                 opcode => IF_ID_Q (15 DOWNTO 10),
                                                 Rdst_fetch => IF_ID_D (6 DOWNTO 4),
                                                 Rdst_decode => IF_ID_Q (6 DOWNTO 4),
+                                                force_pc => jz_correction,
+                                                zflag => FR_Q (0),
                                                 Rdst_decode_en => ID_EX_D (134),
                                                 Rdst_decode_val => IF_ID_Q (80 DOWNTO 49),
                                                 Rdst_execute => ID_EX_Q (124 DOWNTO 122),
