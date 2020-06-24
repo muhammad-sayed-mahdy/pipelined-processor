@@ -34,3 +34,5 @@ vsim.dbg
 
 # ignore executable files
 *.exe
+
+*.odt*

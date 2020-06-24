@@ -22,7 +22,11 @@ ENTITY Decode IS
             memPCWB, registerWB : out std_logic;
             Rsrc1E, Rsrc2E      : out std_logic;
             isJz, chdecision    : out std_logic;
-            rightPc             : out std_logic_vector(31 DOWNTO 0)
+            rightPc             : out std_logic_vector(31 DOWNTO 0);
+            mem_op              : out std_logic;
+            alu_op              : out std_logic;
+            frWB                : out std_logic;
+            rti_2               : in std_logic
         );
 END ENTITY Decode;
 
@@ -61,8 +65,7 @@ BEGIN
 
     Rsrc1E <= '1' when instruction(15) = '0' OR
      (instruction(15 downto 13) = "100" AND (not(instruction(12 downto 10) = "110"))) OR
-     (instruction(15 downto 13) = "101" AND instruction(10) = '1') OR
-     instruction(15 downto 12) = "1100"
+     (instruction(15 downto 13) = "101" AND instruction(10) = '1')
     else '0';
 
     Rsrc2E <= '1' when instruction(15 downto 14) = "01" OR instruction(15 downto 12) = "0010"
@@ -77,7 +80,7 @@ BEGIN
 
     memRead <= '1' when instruction(15 downto 12) = "1101" OR instruction(15 downto 12) = "1111" OR
      instruction(15 downto 10) = "101000" OR 
-     instruction(15 downto 10) = "101100"
+     instruction(15 downto 10) = "101100" OR rti_2 = '1'
     else '0';
 
     memWrite <= '1' when (instruction(15 downto 13) = "101" AND instruction(10) = '1') OR
@@ -86,11 +89,12 @@ BEGIN
 
     auxOp <= "01" when instruction(15 downto 12) = "0010"
     else "10" when instruction(15 downto 11) = "10100" OR
-     (instruction(15 downto 13) = "110" AND (instruction(12) = '1' OR instruction(9) = '1'))
+     (instruction(15 downto 13) = "110" AND (instruction(12) = '1' OR instruction(9) = '1')) OR
+     rti_2 = '1'
     else "11" when instruction(15 downto 10) = "100101"
     else "00";
 
-    memPCWB <= '1' when instruction(15 downto 12) = "1101" OR instruction(15 downto 12) = "1111"
+    memPCWB <= '1' when instruction(15 downto 10) = "110101" OR instruction(15 downto 12) = "1111" OR rti_2 = '1'
     else '0';
 
     registerWB <= '1' when instruction(15) = '0' OR
@@ -100,12 +104,13 @@ BEGIN
 
     aluCode <= "0001" when instruction(15 downto 10) = "101010"
     else "0010" when instruction(15 downto 8) = "10010000"
+    else "0011" when instruction(15 downto 9) = "1100100"
     else "0100" when instruction(15 downto 12) = "0000"
     else "0101" when instruction(15 downto 12) = "0001"
     else "0110" when instruction(15 downto 12) = "0110"
     else "0111" when instruction(15 downto 12) = "0111"
-    else "1000" when instruction(15 downto 12) = "0011" OR instruction(15 downto 12) = "0100" OR
-     (isStack = '1' AND (instruction(15 downto 10) = "101000" OR instruction(15 downto 12) = "1101")) 
+    else "1000" when instruction(15 downto 12) = "0011" OR instruction(15 downto 12) = "0100" OR rti_2 = '1' OR
+     (isStack = '1' AND (instruction(15 downto 10) = "101000" OR instruction(15 downto 12) = "1101"))
     else "1001" when instruction(15 downto 12) = "0101" OR isStack = '1'
     else "1010" when instruction(15 downto 8) = "10010001"
     else "1011" when instruction(15 downto 8) = "10010010"
@@ -119,5 +124,15 @@ BEGIN
 
     chdecision <= decision XOR zflag when instruction(15 downto 9) = "1100100"
     else '0';
+
+    mem_op <= '1' when instruction (15 downto 10) = "101000" or instruction (15 downto 10) = "101100"
+            else '0';
+    
+    alu_op <= '1' when instruction (15) = '0' or instruction (15 downto 10) = "100100" or instruction (15 downto 10) = "100110" or instruction (15 downto 11) = "10101"
+            else '0';
+            
+    frWB <= '1' when instruction(15 downto 10) = "110110"
+    else '0';
+
 
 END archdecode;

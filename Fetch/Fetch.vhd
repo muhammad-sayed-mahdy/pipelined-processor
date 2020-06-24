@@ -17,7 +17,12 @@ ENTITY Fetch IS
             skip_instruc    : in std_logic;
             branch_status   : out std_logic;
             out_instruc     : out std_logic_vector (15 downto 0);
-            out_address     : out std_logic_vector (31 downto 0)
+            out_address     : out std_logic_vector (31 downto 0);
+            -- Forwarding
+            reg_match       : in std_logic;
+            reg_fwd_val     : in std_logic_vector(31 downto 0);
+            -- Stalling
+            stall           : in std_logic
         );
 END ENTITY Fetch;
 
@@ -52,6 +57,7 @@ ARCHITECTURE rtl OF Fetch IS
     PORT (
         clk : IN std_logic;
         we : IN std_logic;
+        re : IN std_logic;
         address : IN std_logic_vector(addressW - 1 DOWNTO 0);
         datain : IN std_logic_vector(busW - 1 DOWNTO 0);
         dataout : OUT std_logic_vector(busW - 1 DOWNTO 0));
@@ -71,26 +77,35 @@ ARCHITECTURE rtl OF Fetch IS
     SIGNAL new_address, curr_address, pc_inc    : std_logic_vector (31 downto 0);
     SIGNAL normal_curr_address                  : std_logic_vector (31 downto 0);
     SIGNAL new_instruction                      : std_logic_vector (15 downto 0);
+    SIGNAL pc_enable                            : std_logic;
+    SIGNAL correct_dst                          : std_logic;
 BEGIN
-    PC              : reg_rise GENERIC MAP (32) PORT MAP ('1', clk, rst, new_address, normal_curr_address);
+    PC              : reg_rise GENERIC MAP (32) PORT MAP (pc_enable, clk, rst, new_address, normal_curr_address);
     -- instruction_reg : reg GENERIC MAP (16) PORT MAP ('1', clk, rst, new_instruction, out_instruc);
     bpram           : branch_prediction_ram PORT MAP (clk, rst, branch_we, branch_prediction_address, zero_flag, branch_prediction_out);
-    instruction_mem : memory GENERIC MAP(16, 16, 11) PORT MAP ('0', '0', curr_address(10 downto 0), "0000000000000000", new_instruction);
+    instruction_mem : memory GENERIC MAP(16, 16, 11) PORT MAP ('0', '0', '1', curr_address(10 downto 0), "0000000000000000", new_instruction);
     PC_Adder        : adder GENERIC MAP (32) PORT MAP (curr_address,  "00000000000000000000000000000000", '1', open, pc_inc);
     
+    pc_enable <= NOT stall;
+
     branch_prediction_address <= jz_address WHEN jz_signal = '1'
     ELSE curr_address(7 downto 0);
 
     branch_we <= jz_signal AND (NOT skip_instruc);
 
-    curr_address <= normal_curr_address WHEN force_pc = '0'
-    ELSE correct_pc;
+    curr_address <= mem_val WHEN mem_signal = '1'
+    ELSE reg_fwd_val WHEN force_pc = '1' AND zero_flag = '1' AND reg_match = '1'
+    ELSE correct_pc WHEN force_pc = '1'
+    ELSE normal_curr_address;
 
     out_instruc <= new_instruction;
     out_address <= pc_inc;
     branch_status <= branch_prediction_out;
 
-    new_address <= mem_val WHEN mem_signal = '1'
+    correct_dst <= '1' WHEN skip_instruc = '0' AND new_instruction(15 downto 12) = "1100" AND (new_instruction(11) = '0' OR branch_prediction_out = '1')
+                ELSE '0';
+
+    new_address <= reg_fwd_val WHEN skip_instruc = '0' AND new_instruction(15 downto 12) = "1100" AND (new_instruction(11) = '0' OR zero_flag = '1') AND reg_match = '1' AND stall = '0'
     ELSE reg_arr(to_integer(unsigned(new_instruction(6 downto 4)))) WHEN skip_instruc = '0' AND new_instruction(15 downto 12) = "1100" AND (new_instruction(11) = '0' OR branch_prediction_out = '1')
     ELSE pc_inc;
 END rtl;

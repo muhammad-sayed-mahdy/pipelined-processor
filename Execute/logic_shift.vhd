@@ -23,13 +23,16 @@ architecture logic_shift_arch of logic_shift is
             vAshr := A;
             vCshl := '0';
             vCshr := '0';
-            if to_integer(unsigned(B)) > 0 and to_integer(unsigned(B)) <= n then
+            if  to_integer(unsigned(B)) <= n then
                 l1 : for i in 0 to to_integer(unsigned(B))-1 loop
                     vCshl := vAshl(n-1);
                     vAshl := vAshl(n-2 downto 0) & '0';
                     vCshr := vAshr(0);
                     vAshr := '0' & vAshr(n-1 downto 1);
                 end loop ; -- l1
+            else
+                vAshl := (others => '0');
+                vAshr := (others => '0');
             end if ;
             Ashl <= vAshl;
             Ashr <= vAshr;

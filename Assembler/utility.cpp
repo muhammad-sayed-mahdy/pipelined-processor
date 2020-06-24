@@ -25,7 +25,7 @@ string parse(string& s)
 
     s.erase(std::remove_if(s.begin(), s.end(), ::isspace), s.end());
 
-    return toupper(s);;
+    return toupper(s);
 }
 
 string toupper(string& s)
@@ -70,6 +70,10 @@ vector<string> split(string s, int n, bool t)
 
 bool is_hex(string s)
 {
+    if (s.size() == 0)
+    {
+        return false;
+    }
     toupper(s);
     for(auto& c : s)
     {

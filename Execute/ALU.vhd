@@ -6,6 +6,7 @@ entity alu is
     port (
         A, B : in std_logic_vector(n-1 downto 0);
         Opcode: in std_logic_vector (3 downto 0);
+        rst: in std_logic;
         F : out std_logic_vector (n-1 downto 0);
         Cout, Z, NF: out std_logic
     ) ;
@@ -27,9 +28,11 @@ begin
     else F0;
 
     Cout <= Cout1 when (Opcode(3 downto 2) = "01")
-    else Cout0 when (Opcode(3 downto 2) = "10");
+    else Cout0 when (Opcode(3 downto 2) = "10")
+    else '0' when (rst = '1');
 
-    Z <= nor F;     --all zeros
-    NF <= '1' when F(n-1) = '1' else '0';
+    Z <= '0' when Opcode = "0011"
+    else nor F;     --all zeros
+    NF <= '1' when F(n-1) = '1' AND Opcode /= "0011" else '0' when Opcode /= "0011";
     
 end alu_arch ; 
